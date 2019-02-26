@@ -1,0 +1,182 @@
+{
+  "__type__": "cc.JsonAsset",
+  "_name": "leveldata",
+  "json": {
+    "levels": [
+      {
+        "startPos": {
+          "x": -230,
+          "y": -50
+        },
+        "keys": [
+          {
+            "id": 1,
+            "nums": 1
+          }
+        ],
+        "items": [
+          {
+            "blockType": "r_h",
+            "number": 8
+          }
+        ]
+      },
+      {
+        "startPos": {
+          "x": -230,
+          "y": -200
+        },
+        "keys": [
+          {
+            "id": 1,
+            "nums": 1
+          },
+          {
+            "id": 5,
+            "nums": 1
+          }
+        ],
+        "items": [
+          {
+            "blockType": "r_h",
+            "number": 6
+          },
+          {
+            "blockType": "r_u",
+            "number": 1
+          },
+          {
+            "blockType": "u_v",
+            "number": 4
+          }
+        ]
+      },
+      {
+        "startPos": {
+          "x": -230,
+          "y": 150
+        },
+        "keys": [
+          {
+            "id": 1,
+            "nums": 1
+          },
+          {
+            "id": 2,
+            "nums": 1
+          }
+        ],
+        "items": [
+          {
+            "blockType": "r_h",
+            "number": 6
+          },
+          {
+            "blockType": "r_d",
+            "number": 1
+          },
+          {
+            "blockType": "d_v",
+            "number": 4
+          }
+        ]
+      },
+      {
+        "startPos": {
+          "x": -230,
+          "y": -200
+        },
+        "keys": [
+          {
+            "id": 1,
+            "nums": 1
+          },
+          {
+            "id": 4,
+            "nums": 1
+          },
+          {
+            "id": 5,
+            "nums": 1
+          }
+        ],
+        "items": [
+          {
+            "blockType": "r_h",
+            "number": 3
+          },
+          {
+            "blockType": "r_u",
+            "number": 1
+          },
+          {
+            "blockType": "u_v",
+            "number": 3
+          },
+          {
+            "blockType": "u_r",
+            "number": 1
+          },
+          {
+            "blockType": "r_h",
+            "number": 3
+          }
+        ]
+      },
+      {
+        "startPos": {
+          "x": -230,
+          "y": 150
+        },
+        "keys": [
+          {
+            "id": 1,
+            "nums": 1
+          },
+          {
+            "id": 2,
+            "nums": 1
+          },
+          {
+            "id": 4,
+            "nums": 1
+          },
+          {
+            "id": 5,
+            "nums": 1
+          }
+        ],
+        "items": [
+          {
+            "blockType": "r_h",
+            "number": 2
+          },
+          {
+            "blockType": "r_d",
+            "number": 1
+          },
+          {
+            "blockType": "d_v",
+            "number": 4
+          },
+          {
+            "blockType": "d_r",
+            "number": 1
+          },
+          {
+            "blockType": "r_h",
+            "number": 2
+          },
+          {
+            "blockType": "r_u",
+            "number": 1
+          },
+          {
+            "blockType": "u_v",
+            "number": 2
+          }
+        ]
+      }
+    ]
+  }
+}
