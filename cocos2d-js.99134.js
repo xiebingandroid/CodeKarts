@@ -671,8 +671,8 @@
       return new cc.Follow(followedNode, rect);
     };
   }), {
-    "../core/platform/CCClass": 106,
-    "../core/utils/misc": 183
+    "../core/platform/CCClass": 114,
+    "../core/utils/misc": 198
   } ],
   3: [ (function(require, module, exports) {
     function cardinalSplineAt(p0, p1, p2, p3, tension, t) {
@@ -3099,8 +3099,8 @@
     };
     false;
   }), {
-    "../core/platform/CCClass": 106,
-    "../core/platform/js": 126
+    "../core/platform/CCClass": 114,
+    "../core/platform/js": 134
   } ],
   8: [ (function(require, module, exports) {
     require("./CCActionManager");
@@ -3373,7 +3373,7 @@
     false;
     module.exports = AnimationAnimator;
   }), {
-    "../core/utils/binary-search": 178,
+    "../core/utils/binary-search": 193,
     "./animation-curves": 11,
     "./motion-path-helper": 17,
     "./playable": 18,
@@ -3642,7 +3642,7 @@
       quickFindIndex: quickFindIndex
     };
   }), {
-    "../core/utils/binary-search": 178,
+    "../core/utils/binary-search": 193,
     "./bezier": 14,
     "./types": 19
   } ],
@@ -4372,7 +4372,7 @@
       Bezier: Bezier
     };
   }), {
-    "../core/utils/binary-search": 178,
+    "../core/utils/binary-search": 193,
     "./animation-curves": 11,
     "./bezier": 14
   } ],
@@ -4432,7 +4432,7 @@
     };
     module.exports = Playable;
   }), {
-    "../core/CCDebug": 23
+    "../core/CCDebug": 27
   } ],
   19: [ (function(require, module, exports) {
     var WrapModeMask = {
@@ -4770,9 +4770,9 @@
     })(WebAudioElement.prototype);
     module.exports = cc.Audio = Audio;
   }), {
-    "../core/assets/CCAudioClip": 31,
-    "../core/event/event-target": 78,
-    "../core/platform/CCSys": 115
+    "../core/assets/CCAudioClip": 35,
+    "../core/event/event-target": 83,
+    "../core/platform/CCSys": 123
   } ],
   21: [ (function(require, module, exports) {
     var Audio = require("./CCAudio");
@@ -5110,10 +5110,1469 @@
     };
     module.exports = cc.audioEngine = audioEngine;
   }), {
-    "../core/assets/CCAudioClip": 31,
+    "../core/assets/CCAudioClip": 35,
     "./CCAudio": 20
   } ],
   22: [ (function(require, module, exports) {
+    var codec = {
+      name: "Jacob__Codec"
+    };
+    codec.Base64 = require("./base64");
+    codec.GZip = require("./gzip");
+    codec.unzip = function() {
+      return codec.GZip.gunzip.apply(codec.GZip, arguments);
+    };
+    codec.unzipBase64 = function() {
+      var buffer = codec.Base64.decode.apply(codec.Base64, arguments);
+      try {
+        return codec.GZip.gunzip.call(codec.GZip, buffer);
+      } catch (e) {
+        return buffer.slice(7);
+      }
+    };
+    codec.unzipBase64AsArray = function(input, bytes) {
+      bytes = bytes || 1;
+      var dec = this.unzipBase64(input), ar = [], i, j, len;
+      for (i = 0, len = dec.length / bytes; i < len; i++) {
+        ar[i] = 0;
+        for (j = bytes - 1; j >= 0; --j) ar[i] += dec.charCodeAt(i * bytes + j) << 8 * j;
+      }
+      return ar;
+    };
+    codec.unzipAsArray = function(input, bytes) {
+      bytes = bytes || 1;
+      var dec = this.unzip(input), ar = [], i, j, len;
+      for (i = 0, len = dec.length / bytes; i < len; i++) {
+        ar[i] = 0;
+        for (j = bytes - 1; j >= 0; --j) ar[i] += dec.charCodeAt(i * bytes + j) << 8 * j;
+      }
+      return ar;
+    };
+    cc.codec = module.exports = codec;
+  }), {
+    "./base64": 23,
+    "./gzip": 24
+  } ],
+  23: [ (function(require, module, exports) {
+    var misc = require("../core/utils/misc");
+    var strValue = misc.BASE64_VALUES;
+    var Base64 = {
+      name: "Jacob__Codec__Base64"
+    };
+    Base64.decode = function Jacob__Codec__Base64__decode(input) {
+      var output = [], chr1, chr2, chr3, enc1, enc2, enc3, enc4, i = 0;
+      input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+      while (i < input.length) {
+        enc1 = strValue[input.charCodeAt(i++)];
+        enc2 = strValue[input.charCodeAt(i++)];
+        enc3 = strValue[input.charCodeAt(i++)];
+        enc4 = strValue[input.charCodeAt(i++)];
+        chr1 = enc1 << 2 | enc2 >> 4;
+        chr2 = (15 & enc2) << 4 | enc3 >> 2;
+        chr3 = (3 & enc3) << 6 | enc4;
+        output.push(String.fromCharCode(chr1));
+        64 !== enc3 && output.push(String.fromCharCode(chr2));
+        64 !== enc4 && output.push(String.fromCharCode(chr3));
+      }
+      output = output.join("");
+      return output;
+    };
+    Base64.decodeAsArray = function Jacob__Codec__Base64___decodeAsArray(input, bytes) {
+      var dec = this.decode(input), ar = [], i, j, len;
+      for (i = 0, len = dec.length / bytes; i < len; i++) {
+        ar[i] = 0;
+        for (j = bytes - 1; j >= 0; --j) ar[i] += dec.charCodeAt(i * bytes + j) << 8 * j;
+      }
+      return ar;
+    };
+    module.exports = Base64;
+  }), {
+    "../core/utils/misc": 198
+  } ],
+  24: [ (function(require, module, exports) {
+    var GZip = function Jacob__GZip(data) {
+      this.data = data;
+      this.debug = false;
+      this.gpflags = void 0;
+      this.files = 0;
+      this.unzipped = [];
+      this.buf32k = new Array(32768);
+      this.bIdx = 0;
+      this.modeZIP = false;
+      this.bytepos = 0;
+      this.bb = 1;
+      this.bits = 0;
+      this.nameBuf = [];
+      this.fileout = void 0;
+      this.literalTree = new Array(GZip.LITERALS);
+      this.distanceTree = new Array(32);
+      this.treepos = 0;
+      this.Places = null;
+      this.len = 0;
+      this.fpos = new Array(17);
+      this.fpos[0] = 0;
+      this.flens = void 0;
+      this.fmax = void 0;
+    };
+    GZip.gunzip = function(string) {
+      string.constructor === Array || string.constructor === String;
+      var gzip = new GZip(string);
+      return gzip.gunzip()[0][0];
+    };
+    GZip.HufNode = function() {
+      this.b0 = 0;
+      this.b1 = 0;
+      this.jump = null;
+      this.jumppos = -1;
+    };
+    GZip.LITERALS = 288;
+    GZip.NAMEMAX = 256;
+    GZip.bitReverse = [ 0, 128, 64, 192, 32, 160, 96, 224, 16, 144, 80, 208, 48, 176, 112, 240, 8, 136, 72, 200, 40, 168, 104, 232, 24, 152, 88, 216, 56, 184, 120, 248, 4, 132, 68, 196, 36, 164, 100, 228, 20, 148, 84, 212, 52, 180, 116, 244, 12, 140, 76, 204, 44, 172, 108, 236, 28, 156, 92, 220, 60, 188, 124, 252, 2, 130, 66, 194, 34, 162, 98, 226, 18, 146, 82, 210, 50, 178, 114, 242, 10, 138, 74, 202, 42, 170, 106, 234, 26, 154, 90, 218, 58, 186, 122, 250, 6, 134, 70, 198, 38, 166, 102, 230, 22, 150, 86, 214, 54, 182, 118, 246, 14, 142, 78, 206, 46, 174, 110, 238, 30, 158, 94, 222, 62, 190, 126, 254, 1, 129, 65, 193, 33, 161, 97, 225, 17, 145, 81, 209, 49, 177, 113, 241, 9, 137, 73, 201, 41, 169, 105, 233, 25, 153, 89, 217, 57, 185, 121, 249, 5, 133, 69, 197, 37, 165, 101, 229, 21, 149, 85, 213, 53, 181, 117, 245, 13, 141, 77, 205, 45, 173, 109, 237, 29, 157, 93, 221, 61, 189, 125, 253, 3, 131, 67, 195, 35, 163, 99, 227, 19, 147, 83, 211, 51, 179, 115, 243, 11, 139, 75, 203, 43, 171, 107, 235, 27, 155, 91, 219, 59, 187, 123, 251, 7, 135, 71, 199, 39, 167, 103, 231, 23, 151, 87, 215, 55, 183, 119, 247, 15, 143, 79, 207, 47, 175, 111, 239, 31, 159, 95, 223, 63, 191, 127, 255 ];
+    GZip.cplens = [ 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 0, 0 ];
+    GZip.cplext = [ 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 99, 99 ];
+    GZip.cpdist = [ 1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577 ];
+    GZip.cpdext = [ 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13 ];
+    GZip.border = [ 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 ];
+    GZip.prototype.gunzip = function() {
+      this.outputArr = [];
+      this.nextFile();
+      return this.unzipped;
+    };
+    GZip.prototype.readByte = function() {
+      this.bits += 8;
+      return this.bytepos < this.data.length ? this.data.charCodeAt(this.bytepos++) : -1;
+    };
+    GZip.prototype.byteAlign = function() {
+      this.bb = 1;
+    };
+    GZip.prototype.readBit = function() {
+      var carry;
+      this.bits++;
+      carry = 1 & this.bb;
+      this.bb >>= 1;
+      if (0 === this.bb) {
+        this.bb = this.readByte();
+        carry = 1 & this.bb;
+        this.bb = this.bb >> 1 | 128;
+      }
+      return carry;
+    };
+    GZip.prototype.readBits = function(a) {
+      var res = 0, i = a;
+      while (i--) res = res << 1 | this.readBit();
+      a && (res = GZip.bitReverse[res] >> 8 - a);
+      return res;
+    };
+    GZip.prototype.flushBuffer = function() {
+      this.bIdx = 0;
+    };
+    GZip.prototype.addBuffer = function(a) {
+      this.buf32k[this.bIdx++] = a;
+      this.outputArr.push(String.fromCharCode(a));
+      32768 === this.bIdx && (this.bIdx = 0);
+    };
+    GZip.prototype.IsPat = function() {
+      while (1) {
+        if (this.fpos[this.len] >= this.fmax) return -1;
+        if (this.flens[this.fpos[this.len]] === this.len) return this.fpos[this.len]++;
+        this.fpos[this.len]++;
+      }
+    };
+    GZip.prototype.Rec = function() {
+      var curplace = this.Places[this.treepos];
+      var tmp;
+      if (17 === this.len) return -1;
+      this.treepos++;
+      this.len++;
+      tmp = this.IsPat();
+      if (tmp >= 0) curplace.b0 = tmp; else {
+        curplace.b0 = 32768;
+        if (this.Rec()) return -1;
+      }
+      tmp = this.IsPat();
+      if (tmp >= 0) {
+        curplace.b1 = tmp;
+        curplace.jump = null;
+      } else {
+        curplace.b1 = 32768;
+        curplace.jump = this.Places[this.treepos];
+        curplace.jumppos = this.treepos;
+        if (this.Rec()) return -1;
+      }
+      this.len--;
+      return 0;
+    };
+    GZip.prototype.CreateTree = function(currentTree, numval, lengths, show) {
+      var i;
+      this.Places = currentTree;
+      this.treepos = 0;
+      this.flens = lengths;
+      this.fmax = numval;
+      for (i = 0; i < 17; i++) this.fpos[i] = 0;
+      this.len = 0;
+      if (this.Rec()) return -1;
+      return 0;
+    };
+    GZip.prototype.DecodeValue = function(currentTree) {
+      var len, i, xtreepos = 0, X = currentTree[xtreepos], b;
+      while (1) {
+        b = this.readBit();
+        if (b) {
+          if (!(32768 & X.b1)) return X.b1;
+          X = X.jump;
+          len = currentTree.length;
+          for (i = 0; i < len; i++) if (currentTree[i] === X) {
+            xtreepos = i;
+            break;
+          }
+        } else {
+          if (!(32768 & X.b0)) return X.b0;
+          xtreepos++;
+          X = currentTree[xtreepos];
+        }
+      }
+      return -1;
+    };
+    GZip.prototype.DeflateLoop = function() {
+      var last, c, type, i, len;
+      do {
+        last = this.readBit();
+        type = this.readBits(2);
+        if (0 === type) {
+          var blockLen, cSum;
+          this.byteAlign();
+          blockLen = this.readByte();
+          blockLen |= this.readByte() << 8;
+          cSum = this.readByte();
+          cSum |= this.readByte() << 8;
+          65535 & (blockLen ^ ~cSum) && document.write("BlockLen checksum mismatch\n");
+          while (blockLen--) {
+            c = this.readByte();
+            this.addBuffer(c);
+          }
+        } else if (1 === type) {
+          var j;
+          while (1) {
+            j = GZip.bitReverse[this.readBits(7)] >> 1;
+            if (j > 23) {
+              j = j << 1 | this.readBit();
+              if (j > 199) {
+                j -= 128;
+                j = j << 1 | this.readBit();
+              } else {
+                j -= 48;
+                j > 143 && (j += 136);
+              }
+            } else j += 256;
+            if (j < 256) this.addBuffer(j); else {
+              if (256 === j) break;
+              var len, dist;
+              j -= 257;
+              len = this.readBits(GZip.cplext[j]) + GZip.cplens[j];
+              j = GZip.bitReverse[this.readBits(5)] >> 3;
+              if (GZip.cpdext[j] > 8) {
+                dist = this.readBits(8);
+                dist |= this.readBits(GZip.cpdext[j] - 8) << 8;
+              } else dist = this.readBits(GZip.cpdext[j]);
+              dist += GZip.cpdist[j];
+              for (j = 0; j < len; j++) {
+                var c = this.buf32k[this.bIdx - dist & 32767];
+                this.addBuffer(c);
+              }
+            }
+          }
+        } else if (2 === type) {
+          var j, n, literalCodes, distCodes, lenCodes;
+          var ll = new Array(320);
+          literalCodes = 257 + this.readBits(5);
+          distCodes = 1 + this.readBits(5);
+          lenCodes = 4 + this.readBits(4);
+          for (j = 0; j < 19; j++) ll[j] = 0;
+          for (j = 0; j < lenCodes; j++) ll[GZip.border[j]] = this.readBits(3);
+          len = this.distanceTree.length;
+          for (i = 0; i < len; i++) this.distanceTree[i] = new GZip.HufNode();
+          if (this.CreateTree(this.distanceTree, 19, ll, 0)) {
+            this.flushBuffer();
+            return 1;
+          }
+          n = literalCodes + distCodes;
+          i = 0;
+          var z = -1;
+          while (i < n) {
+            z++;
+            j = this.DecodeValue(this.distanceTree);
+            if (j < 16) ll[i++] = j; else if (16 === j) {
+              var l;
+              j = 3 + this.readBits(2);
+              if (i + j > n) {
+                this.flushBuffer();
+                return 1;
+              }
+              l = i ? ll[i - 1] : 0;
+              while (j--) ll[i++] = l;
+            } else {
+              j = 17 === j ? 3 + this.readBits(3) : 11 + this.readBits(7);
+              if (i + j > n) {
+                this.flushBuffer();
+                return 1;
+              }
+              while (j--) ll[i++] = 0;
+            }
+          }
+          len = this.literalTree.length;
+          for (i = 0; i < len; i++) this.literalTree[i] = new GZip.HufNode();
+          if (this.CreateTree(this.literalTree, literalCodes, ll, 0)) {
+            this.flushBuffer();
+            return 1;
+          }
+          len = this.literalTree.length;
+          for (i = 0; i < len; i++) this.distanceTree[i] = new GZip.HufNode();
+          var ll2 = new Array();
+          for (i = literalCodes; i < ll.length; i++) ll2[i - literalCodes] = ll[i];
+          if (this.CreateTree(this.distanceTree, distCodes, ll2, 0)) {
+            this.flushBuffer();
+            return 1;
+          }
+          while (1) {
+            j = this.DecodeValue(this.literalTree);
+            if (j >= 256) {
+              var len, dist;
+              j -= 256;
+              if (0 === j) break;
+              j--;
+              len = this.readBits(GZip.cplext[j]) + GZip.cplens[j];
+              j = this.DecodeValue(this.distanceTree);
+              if (GZip.cpdext[j] > 8) {
+                dist = this.readBits(8);
+                dist |= this.readBits(GZip.cpdext[j] - 8) << 8;
+              } else dist = this.readBits(GZip.cpdext[j]);
+              dist += GZip.cpdist[j];
+              while (len--) {
+                var c = this.buf32k[this.bIdx - dist & 32767];
+                this.addBuffer(c);
+              }
+            } else this.addBuffer(j);
+          }
+        }
+      } while (!last);
+      this.flushBuffer();
+      this.byteAlign();
+      return 0;
+    };
+    GZip.prototype.unzipFile = function(name) {
+      var i;
+      this.gunzip();
+      for (i = 0; i < this.unzipped.length; i++) if (this.unzipped[i][1] === name) return this.unzipped[i][0];
+    };
+    GZip.prototype.nextFile = function() {
+      this.outputArr = [];
+      this.modeZIP = false;
+      var tmp = [];
+      tmp[0] = this.readByte();
+      tmp[1] = this.readByte();
+      if (120 === tmp[0] && 218 === tmp[1]) {
+        this.DeflateLoop();
+        this.unzipped[this.files] = [ this.outputArr.join(""), "geonext.gxt" ];
+        this.files++;
+      }
+      if (31 === tmp[0] && 139 === tmp[1]) {
+        this.skipdir();
+        this.unzipped[this.files] = [ this.outputArr.join(""), "file" ];
+        this.files++;
+      }
+      if (80 === tmp[0] && 75 === tmp[1]) {
+        this.modeZIP = true;
+        tmp[2] = this.readByte();
+        tmp[3] = this.readByte();
+        if (3 === tmp[2] && 4 === tmp[3]) {
+          tmp[0] = this.readByte();
+          tmp[1] = this.readByte();
+          this.gpflags = this.readByte();
+          this.gpflags |= this.readByte() << 8;
+          var method = this.readByte();
+          method |= this.readByte() << 8;
+          this.readByte();
+          this.readByte();
+          this.readByte();
+          this.readByte();
+          var compSize = this.readByte();
+          compSize |= this.readByte() << 8;
+          compSize |= this.readByte() << 16;
+          compSize |= this.readByte() << 24;
+          var size = this.readByte();
+          size |= this.readByte() << 8;
+          size |= this.readByte() << 16;
+          size |= this.readByte() << 24;
+          var filelen = this.readByte();
+          filelen |= this.readByte() << 8;
+          var extralen = this.readByte();
+          extralen |= this.readByte() << 8;
+          i = 0;
+          this.nameBuf = [];
+          while (filelen--) {
+            var c = this.readByte();
+            "/" === c | ":" === c ? i = 0 : i < GZip.NAMEMAX - 1 && (this.nameBuf[i++] = String.fromCharCode(c));
+          }
+          this.fileout || (this.fileout = this.nameBuf);
+          var i = 0;
+          while (i < extralen) {
+            c = this.readByte();
+            i++;
+          }
+          if (8 === method) {
+            this.DeflateLoop();
+            this.unzipped[this.files] = [ this.outputArr.join(""), this.nameBuf.join("") ];
+            this.files++;
+          }
+          this.skipdir();
+        }
+      }
+    };
+    GZip.prototype.skipdir = function() {
+      var tmp = [];
+      var compSize, size, os, i, c;
+      if (8 & this.gpflags) {
+        tmp[0] = this.readByte();
+        tmp[1] = this.readByte();
+        tmp[2] = this.readByte();
+        tmp[3] = this.readByte();
+        compSize = this.readByte();
+        compSize |= this.readByte() << 8;
+        compSize |= this.readByte() << 16;
+        compSize |= this.readByte() << 24;
+        size = this.readByte();
+        size |= this.readByte() << 8;
+        size |= this.readByte() << 16;
+        size |= this.readByte() << 24;
+      }
+      this.modeZIP && this.nextFile();
+      tmp[0] = this.readByte();
+      if (8 !== tmp[0]) return 0;
+      this.gpflags = this.readByte();
+      this.readByte();
+      this.readByte();
+      this.readByte();
+      this.readByte();
+      this.readByte();
+      os = this.readByte();
+      if (4 & this.gpflags) {
+        tmp[0] = this.readByte();
+        tmp[2] = this.readByte();
+        this.len = tmp[0] + 256 * tmp[1];
+        for (i = 0; i < this.len; i++) this.readByte();
+      }
+      if (8 & this.gpflags) {
+        i = 0;
+        this.nameBuf = [];
+        while (c = this.readByte()) {
+          "7" !== c && ":" !== c || (i = 0);
+          i < GZip.NAMEMAX - 1 && (this.nameBuf[i++] = c);
+        }
+      }
+      if (16 & this.gpflags) while (c = this.readByte()) ;
+      if (2 & this.gpflags) {
+        this.readByte();
+        this.readByte();
+      }
+      this.DeflateLoop();
+      size = this.readByte();
+      size |= this.readByte() << 8;
+      size |= this.readByte() << 16;
+      size |= this.readByte() << 24;
+      this.modeZIP && this.nextFile();
+    };
+    module.exports = GZip;
+  }), {} ],
+  25: [ (function(require, module, exports) {
+    (function() {
+      "use strict";
+      function i(a) {
+        throw a;
+      }
+      var r = void 0, v = !0, aa = this;
+      function y(a, c) {
+        var b = a.split("."), e = aa;
+        !(b[0] in e) && e.execScript && e.execScript("var " + b[0]);
+        for (var f; b.length && (f = b.shift()); ) b.length || c === r ? e = e[f] ? e[f] : e[f] = {} : e[f] = c;
+      }
+      var H = "undefined" !== typeof Uint8Array && "undefined" !== typeof Uint16Array && "undefined" !== typeof Uint32Array;
+      function ba(a) {
+        if ("string" === typeof a) {
+          var c = a.split(""), b, e;
+          b = 0;
+          for (e = c.length; b < e; b++) c[b] = (255 & c[b].charCodeAt(0)) >>> 0;
+          a = c;
+        }
+        for (var f = 1, d = 0, g = a.length, h, m = 0; 0 < g; ) {
+          h = 1024 < g ? 1024 : g;
+          g -= h;
+          do {
+            f += a[m++], d += f;
+          } while (--h);
+          f %= 65521;
+          d %= 65521;
+        }
+        return (d << 16 | f) >>> 0;
+      }
+      function J(a, c) {
+        this.index = "number" === typeof c ? c : 0;
+        this.i = 0;
+        this.buffer = a instanceof (H ? Uint8Array : Array) ? a : new (H ? Uint8Array : Array)(32768);
+        2 * this.buffer.length <= this.index && i(Error("invalid index"));
+        this.buffer.length <= this.index && this.f();
+      }
+      J.prototype.f = function() {
+        var a = this.buffer, c, b = a.length, e = new (H ? Uint8Array : Array)(b << 1);
+        if (H) e.set(a); else for (c = 0; c < b; ++c) e[c] = a[c];
+        return this.buffer = e;
+      };
+      J.prototype.d = function(a, c, b) {
+        var e = this.buffer, f = this.index, d = this.i, g = e[f], h;
+        b && 1 < c && (a = 8 < c ? (N[255 & a] << 24 | N[a >>> 8 & 255] << 16 | N[a >>> 16 & 255] << 8 | N[a >>> 24 & 255]) >> 32 - c : N[a] >> 8 - c);
+        if (8 > c + d) g = g << c | a, d += c; else for (h = 0; h < c; ++h) g = g << 1 | a >> c - h - 1 & 1, 
+        8 === ++d && (d = 0, e[f++] = N[g], g = 0, f === e.length && (e = this.f()));
+        e[f] = g;
+        this.buffer = e;
+        this.i = d;
+        this.index = f;
+      };
+      J.prototype.finish = function() {
+        var a = this.buffer, c = this.index, b;
+        0 < this.i && (a[c] <<= 8 - this.i, a[c] = N[a[c]], c++);
+        H ? b = a.subarray(0, c) : (a.length = c, b = a);
+        return b;
+      };
+      var ca = new (H ? Uint8Array : Array)(256), ha;
+      for (ha = 0; 256 > ha; ++ha) {
+        for (var R = ha, ia = R, ja = 7, R = R >>> 1; R; R >>>= 1) ia <<= 1, ia |= 1 & R, 
+        --ja;
+        ca[ha] = (ia << ja & 255) >>> 0;
+      }
+      var N = ca;
+      var ka = [ 0, 1996959894, 3993919788, 2567524794, 124634137, 1886057615, 3915621685, 2657392035, 249268274, 2044508324, 3772115230, 2547177864, 162941995, 2125561021, 3887607047, 2428444049, 498536548, 1789927666, 4089016648, 2227061214, 450548861, 1843258603, 4107580753, 2211677639, 325883990, 1684777152, 4251122042, 2321926636, 335633487, 1661365465, 4195302755, 2366115317, 997073096, 1281953886, 3579855332, 2724688242, 1006888145, 1258607687, 3524101629, 2768942443, 901097722, 1119000684, 3686517206, 2898065728, 853044451, 1172266101, 3705015759, 2882616665, 651767980, 1373503546, 3369554304, 3218104598, 565507253, 1454621731, 3485111705, 3099436303, 671266974, 1594198024, 3322730930, 2970347812, 795835527, 1483230225, 3244367275, 3060149565, 1994146192, 31158534, 2563907772, 4023717930, 1907459465, 112637215, 2680153253, 3904427059, 2013776290, 251722036, 2517215374, 3775830040, 2137656763, 141376813, 2439277719, 3865271297, 1802195444, 476864866, 2238001368, 4066508878, 1812370925, 453092731, 2181625025, 4111451223, 1706088902, 314042704, 2344532202, 4240017532, 1658658271, 366619977, 2362670323, 4224994405, 1303535960, 984961486, 2747007092, 3569037538, 1256170817, 1037604311, 2765210733, 3554079995, 1131014506, 879679996, 2909243462, 3663771856, 1141124467, 855842277, 2852801631, 3708648649, 1342533948, 654459306, 3188396048, 3373015174, 1466479909, 544179635, 3110523913, 3462522015, 1591671054, 702138776, 2966460450, 3352799412, 1504918807, 783551873, 3082640443, 3233442989, 3988292384, 2596254646, 62317068, 1957810842, 3939845945, 2647816111, 81470997, 1943803523, 3814918930, 2489596804, 225274430, 2053790376, 3826175755, 2466906013, 167816743, 2097651377, 4027552580, 2265490386, 503444072, 1762050814, 4150417245, 2154129355, 426522225, 1852507879, 4275313526, 2312317920, 282753626, 1742555852, 4189708143, 2394877945, 397917763, 1622183637, 3604390888, 2714866558, 953729732, 1340076626, 3518719985, 2797360999, 1068828381, 1219638859, 3624741850, 2936675148, 906185462, 1090812512, 3747672003, 2825379669, 829329135, 1181335161, 3412177804, 3160834842, 628085408, 1382605366, 3423369109, 3138078467, 570562233, 1426400815, 3317316542, 2998733608, 733239954, 1555261956, 3268935591, 3050360625, 752459403, 1541320221, 2607071920, 3965973030, 1969922972, 40735498, 2617837225, 3943577151, 1913087877, 83908371, 2512341634, 3803740692, 2075208622, 213261112, 2463272603, 3855990285, 2094854071, 198958881, 2262029012, 4057260610, 1759359992, 534414190, 2176718541, 4139329115, 1873836001, 414664567, 2282248934, 4279200368, 1711684554, 285281116, 2405801727, 4167216745, 1634467795, 376229701, 2685067896, 3608007406, 1308918612, 956543938, 2808555105, 3495958263, 1231636301, 1047427035, 2932959818, 3654703836, 1088359270, 936918e3, 2847714899, 3736837829, 1202900863, 817233897, 3183342108, 3401237130, 1404277552, 615818150, 3134207493, 3453421203, 1423857449, 601450431, 3009837614, 3294710456, 1567103746, 711928724, 3020668471, 3272380065, 1510334235, 755167117 ];
+      H && new Uint32Array(ka);
+      function la(a) {
+        this.buffer = new (H ? Uint16Array : Array)(2 * a);
+        this.length = 0;
+      }
+      la.prototype.getParent = function(a) {
+        return 2 * ((a - 2) / 4 | 0);
+      };
+      la.prototype.push = function(a, c) {
+        var b, e, f = this.buffer, d;
+        b = this.length;
+        f[this.length++] = c;
+        for (f[this.length++] = a; 0 < b; ) {
+          if (e = this.getParent(b), !(f[b] > f[e])) break;
+          d = f[b], f[b] = f[e], f[e] = d, d = f[b + 1], f[b + 1] = f[e + 1], f[e + 1] = d, 
+          b = e;
+        }
+        return this.length;
+      };
+      la.prototype.pop = function() {
+        var a, c, b = this.buffer, e, f, d;
+        c = b[0];
+        a = b[1];
+        this.length -= 2;
+        b[0] = b[this.length];
+        b[1] = b[this.length + 1];
+        for (d = 0; ;) {
+          f = 2 * d + 2;
+          if (f >= this.length) break;
+          f + 2 < this.length && b[f + 2] > b[f] && (f += 2);
+          if (!(b[f] > b[d])) break;
+          e = b[d], b[d] = b[f], b[f] = e, e = b[d + 1], b[d + 1] = b[f + 1], b[f + 1] = e;
+          d = f;
+        }
+        return {
+          index: a,
+          value: c,
+          length: this.length
+        };
+      };
+      function S(a) {
+        var c = a.length, b = 0, e = Number.POSITIVE_INFINITY, f, d, g, h, m, j, s, n, l;
+        for (n = 0; n < c; ++n) a[n] > b && (b = a[n]), a[n] < e && (e = a[n]);
+        f = 1 << b;
+        d = new (H ? Uint32Array : Array)(f);
+        g = 1;
+        h = 0;
+        for (m = 2; g <= b; ) {
+          for (n = 0; n < c; ++n) if (a[n] === g) {
+            j = 0;
+            s = h;
+            for (l = 0; l < g; ++l) j = j << 1 | 1 & s, s >>= 1;
+            for (l = j; l < f; l += m) d[l] = g << 16 | n;
+            ++h;
+          }
+          ++g;
+          h <<= 1;
+          m <<= 1;
+        }
+        return [ d, b, e ];
+      }
+      function ma(a, c) {
+        this.h = pa;
+        this.w = 0;
+        this.input = a;
+        this.b = 0;
+        c && (c.lazy && (this.w = c.lazy), "number" === typeof c.compressionType && (this.h = c.compressionType), 
+        c.outputBuffer && (this.a = H && c.outputBuffer instanceof Array ? new Uint8Array(c.outputBuffer) : c.outputBuffer), 
+        "number" === typeof c.outputIndex && (this.b = c.outputIndex));
+        this.a || (this.a = new (H ? Uint8Array : Array)(32768));
+      }
+      var pa = 2, qa = {
+        NONE: 0,
+        r: 1,
+        j: pa,
+        N: 3
+      }, ra = [], T;
+      for (T = 0; 288 > T; T++) switch (v) {
+       case 143 >= T:
+        ra.push([ T + 48, 8 ]);
+        break;
+
+       case 255 >= T:
+        ra.push([ T - 144 + 400, 9 ]);
+        break;
+
+       case 279 >= T:
+        ra.push([ T - 256 + 0, 7 ]);
+        break;
+
+       case 287 >= T:
+        ra.push([ T - 280 + 192, 8 ]);
+        break;
+
+       default:
+        i("invalid literal: " + T);
+      }
+      ma.prototype.n = function() {
+        var a, c, b, e, f = this.input;
+        switch (this.h) {
+         case 0:
+          b = 0;
+          for (e = f.length; b < e; ) {
+            c = H ? f.subarray(b, b + 65535) : f.slice(b, b + 65535);
+            b += c.length;
+            var d = c, g = b === e, h = r, m = r, j = r, s = r, n = r, l = this.a, q = this.b;
+            if (H) {
+              for (l = new Uint8Array(this.a.buffer); l.length <= q + d.length + 5; ) l = new Uint8Array(l.length << 1);
+              l.set(this.a);
+            }
+            h = g ? 1 : 0;
+            l[q++] = 0 | h;
+            m = d.length;
+            j = 65536 + ~m & 65535;
+            l[q++] = 255 & m;
+            l[q++] = m >>> 8 & 255;
+            l[q++] = 255 & j;
+            l[q++] = j >>> 8 & 255;
+            if (H) l.set(d, q), q += d.length, l = l.subarray(0, q); else {
+              s = 0;
+              for (n = d.length; s < n; ++s) l[q++] = d[s];
+              l.length = q;
+            }
+            this.b = q;
+            this.a = l;
+          }
+          break;
+
+         case 1:
+          var E = new J(new Uint8Array(this.a.buffer), this.b);
+          E.d(1, 1, v);
+          E.d(1, 2, v);
+          var t = sa(this, f), z, K, A;
+          z = 0;
+          for (K = t.length; z < K; z++) if (A = t[z], J.prototype.d.apply(E, ra[A]), 256 < A) E.d(t[++z], t[++z], v), 
+          E.d(t[++z], 5), E.d(t[++z], t[++z], v); else if (256 === A) break;
+          this.a = E.finish();
+          this.b = this.a.length;
+          break;
+
+         case pa:
+          var x = new J(new Uint8Array(this.a), this.b), B, k, p, D, C, da = [ 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 ], W, Ma, ea, Na, na, va = Array(19), Oa, $, oa, F, Pa;
+          B = pa;
+          x.d(1, 1, v);
+          x.d(B, 2, v);
+          k = sa(this, f);
+          W = ta(this.L, 15);
+          Ma = ua(W);
+          ea = ta(this.K, 7);
+          Na = ua(ea);
+          for (p = 286; 257 < p && 0 === W[p - 1]; p--) ;
+          for (D = 30; 1 < D && 0 === ea[D - 1]; D--) ;
+          var Qa = p, Ra = D, M = new (H ? Uint32Array : Array)(Qa + Ra), u, O, w, fa, L = new (H ? Uint32Array : Array)(316), I, G, P = new (H ? Uint8Array : Array)(19);
+          for (u = O = 0; u < Qa; u++) M[O++] = W[u];
+          for (u = 0; u < Ra; u++) M[O++] = ea[u];
+          if (!H) {
+            u = 0;
+            for (fa = P.length; u < fa; ++u) P[u] = 0;
+          }
+          u = I = 0;
+          for (fa = M.length; u < fa; u += O) {
+            for (O = 1; u + O < fa && M[u + O] === M[u]; ++O) ;
+            w = O;
+            if (0 === M[u]) if (3 > w) for (;0 < w--; ) L[I++] = 0, P[0]++; else for (;0 < w; ) G = 138 > w ? w : 138, 
+            G > w - 3 && G < w && (G = w - 3), 10 >= G ? (L[I++] = 17, L[I++] = G - 3, P[17]++) : (L[I++] = 18, 
+            L[I++] = G - 11, P[18]++), w -= G; else if (L[I++] = M[u], P[M[u]]++, w--, 3 > w) for (;0 < w--; ) L[I++] = M[u], 
+            P[M[u]]++; else for (;0 < w; ) G = 6 > w ? w : 6, G > w - 3 && G < w && (G = w - 3), 
+            L[I++] = 16, L[I++] = G - 3, P[16]++, w -= G;
+          }
+          a = H ? L.subarray(0, I) : L.slice(0, I);
+          na = ta(P, 7);
+          for (F = 0; 19 > F; F++) va[F] = na[da[F]];
+          for (C = 19; 4 < C && 0 === va[C - 1]; C--) ;
+          Oa = ua(na);
+          x.d(p - 257, 5, v);
+          x.d(D - 1, 5, v);
+          x.d(C - 4, 4, v);
+          for (F = 0; F < C; F++) x.d(va[F], 3, v);
+          F = 0;
+          for (Pa = a.length; F < Pa; F++) if ($ = a[F], x.d(Oa[$], na[$], v), 16 <= $) {
+            F++;
+            switch ($) {
+             case 16:
+              oa = 2;
+              break;
+
+             case 17:
+              oa = 3;
+              break;
+
+             case 18:
+              oa = 7;
+              break;
+
+             default:
+              i("invalid code: " + $);
+            }
+            x.d(a[F], oa, v);
+          }
+          var Sa = [ Ma, W ], Ta = [ Na, ea ], Q, Ua, ga, ya, Va, Wa, Xa, Ya;
+          Va = Sa[0];
+          Wa = Sa[1];
+          Xa = Ta[0];
+          Ya = Ta[1];
+          Q = 0;
+          for (Ua = k.length; Q < Ua; ++Q) if (ga = k[Q], x.d(Va[ga], Wa[ga], v), 256 < ga) x.d(k[++Q], k[++Q], v), 
+          ya = k[++Q], x.d(Xa[ya], Ya[ya], v), x.d(k[++Q], k[++Q], v); else if (256 === ga) break;
+          this.a = x.finish();
+          this.b = this.a.length;
+          break;
+
+         default:
+          i("invalid compression type");
+        }
+        return this.a;
+      };
+      function wa(a, c) {
+        this.length = a;
+        this.G = c;
+      }
+      function xa() {
+        var a = za;
+        switch (v) {
+         case 3 === a:
+          return [ 257, a - 3, 0 ];
+
+         case 4 === a:
+          return [ 258, a - 4, 0 ];
+
+         case 5 === a:
+          return [ 259, a - 5, 0 ];
+
+         case 6 === a:
+          return [ 260, a - 6, 0 ];
+
+         case 7 === a:
+          return [ 261, a - 7, 0 ];
+
+         case 8 === a:
+          return [ 262, a - 8, 0 ];
+
+         case 9 === a:
+          return [ 263, a - 9, 0 ];
+
+         case 10 === a:
+          return [ 264, a - 10, 0 ];
+
+         case 12 >= a:
+          return [ 265, a - 11, 1 ];
+
+         case 14 >= a:
+          return [ 266, a - 13, 1 ];
+
+         case 16 >= a:
+          return [ 267, a - 15, 1 ];
+
+         case 18 >= a:
+          return [ 268, a - 17, 1 ];
+
+         case 22 >= a:
+          return [ 269, a - 19, 2 ];
+
+         case 26 >= a:
+          return [ 270, a - 23, 2 ];
+
+         case 30 >= a:
+          return [ 271, a - 27, 2 ];
+
+         case 34 >= a:
+          return [ 272, a - 31, 2 ];
+
+         case 42 >= a:
+          return [ 273, a - 35, 3 ];
+
+         case 50 >= a:
+          return [ 274, a - 43, 3 ];
+
+         case 58 >= a:
+          return [ 275, a - 51, 3 ];
+
+         case 66 >= a:
+          return [ 276, a - 59, 3 ];
+
+         case 82 >= a:
+          return [ 277, a - 67, 4 ];
+
+         case 98 >= a:
+          return [ 278, a - 83, 4 ];
+
+         case 114 >= a:
+          return [ 279, a - 99, 4 ];
+
+         case 130 >= a:
+          return [ 280, a - 115, 4 ];
+
+         case 162 >= a:
+          return [ 281, a - 131, 5 ];
+
+         case 194 >= a:
+          return [ 282, a - 163, 5 ];
+
+         case 226 >= a:
+          return [ 283, a - 195, 5 ];
+
+         case 257 >= a:
+          return [ 284, a - 227, 5 ];
+
+         case 258 === a:
+          return [ 285, a - 258, 0 ];
+
+         default:
+          i("invalid length: " + a);
+        }
+      }
+      var Aa = [], za, Ba;
+      for (za = 3; 258 >= za; za++) Ba = xa(), Aa[za] = Ba[2] << 24 | Ba[1] << 16 | Ba[0];
+      var Ca = H ? new Uint32Array(Aa) : Aa;
+      function sa(a, c) {
+        function b(a, c) {
+          var b = a.G, d = [], e = 0, f;
+          f = Ca[a.length];
+          d[e++] = 65535 & f;
+          d[e++] = f >> 16 & 255;
+          d[e++] = f >> 24;
+          var g;
+          switch (v) {
+           case 1 === b:
+            g = [ 0, b - 1, 0 ];
+            break;
+
+           case 2 === b:
+            g = [ 1, b - 2, 0 ];
+            break;
+
+           case 3 === b:
+            g = [ 2, b - 3, 0 ];
+            break;
+
+           case 4 === b:
+            g = [ 3, b - 4, 0 ];
+            break;
+
+           case 6 >= b:
+            g = [ 4, b - 5, 1 ];
+            break;
+
+           case 8 >= b:
+            g = [ 5, b - 7, 1 ];
+            break;
+
+           case 12 >= b:
+            g = [ 6, b - 9, 2 ];
+            break;
+
+           case 16 >= b:
+            g = [ 7, b - 13, 2 ];
+            break;
+
+           case 24 >= b:
+            g = [ 8, b - 17, 3 ];
+            break;
+
+           case 32 >= b:
+            g = [ 9, b - 25, 3 ];
+            break;
+
+           case 48 >= b:
+            g = [ 10, b - 33, 4 ];
+            break;
+
+           case 64 >= b:
+            g = [ 11, b - 49, 4 ];
+            break;
+
+           case 96 >= b:
+            g = [ 12, b - 65, 5 ];
+            break;
+
+           case 128 >= b:
+            g = [ 13, b - 97, 5 ];
+            break;
+
+           case 192 >= b:
+            g = [ 14, b - 129, 6 ];
+            break;
+
+           case 256 >= b:
+            g = [ 15, b - 193, 6 ];
+            break;
+
+           case 384 >= b:
+            g = [ 16, b - 257, 7 ];
+            break;
+
+           case 512 >= b:
+            g = [ 17, b - 385, 7 ];
+            break;
+
+           case 768 >= b:
+            g = [ 18, b - 513, 8 ];
+            break;
+
+           case 1024 >= b:
+            g = [ 19, b - 769, 8 ];
+            break;
+
+           case 1536 >= b:
+            g = [ 20, b - 1025, 9 ];
+            break;
+
+           case 2048 >= b:
+            g = [ 21, b - 1537, 9 ];
+            break;
+
+           case 3072 >= b:
+            g = [ 22, b - 2049, 10 ];
+            break;
+
+           case 4096 >= b:
+            g = [ 23, b - 3073, 10 ];
+            break;
+
+           case 6144 >= b:
+            g = [ 24, b - 4097, 11 ];
+            break;
+
+           case 8192 >= b:
+            g = [ 25, b - 6145, 11 ];
+            break;
+
+           case 12288 >= b:
+            g = [ 26, b - 8193, 12 ];
+            break;
+
+           case 16384 >= b:
+            g = [ 27, b - 12289, 12 ];
+            break;
+
+           case 24576 >= b:
+            g = [ 28, b - 16385, 13 ];
+            break;
+
+           case 32768 >= b:
+            g = [ 29, b - 24577, 13 ];
+            break;
+
+           default:
+            i("invalid distance");
+          }
+          f = g;
+          d[e++] = f[0];
+          d[e++] = f[1];
+          d[e++] = f[2];
+          var h, j;
+          h = 0;
+          for (j = d.length; h < j; ++h) l[q++] = d[h];
+          t[d[0]]++;
+          z[d[3]]++;
+          E = a.length + c - 1;
+          n = null;
+        }
+        var e, f, d, g, h, m = {}, j, s, n, l = H ? new Uint16Array(2 * c.length) : [], q = 0, E = 0, t = new (H ? Uint32Array : Array)(286), z = new (H ? Uint32Array : Array)(30), K = a.w, A;
+        if (!H) {
+          for (d = 0; 285 >= d; ) t[d++] = 0;
+          for (d = 0; 29 >= d; ) z[d++] = 0;
+        }
+        t[256] = 1;
+        e = 0;
+        for (f = c.length; e < f; ++e) {
+          d = h = 0;
+          for (g = 3; d < g && e + d !== f; ++d) h = h << 8 | c[e + d];
+          m[h] === r && (m[h] = []);
+          j = m[h];
+          if (!(0 < E--)) {
+            for (;0 < j.length && 32768 < e - j[0]; ) j.shift();
+            if (e + 3 >= f) {
+              n && b(n, -1);
+              d = 0;
+              for (g = f - e; d < g; ++d) A = c[e + d], l[q++] = A, ++t[A];
+              break;
+            }
+            if (0 < j.length) {
+              var x = r, B = r, k = 0, p = r, D = r, C = r, da = r, W = c.length, D = 0, da = j.length;
+              a: for (;D < da; D++) {
+                x = j[da - D - 1];
+                p = 3;
+                if (3 < k) {
+                  for (C = k; 3 < C; C--) if (c[x + C - 1] !== c[e + C - 1]) continue a;
+                  p = k;
+                }
+                for (;258 > p && e + p < W && c[x + p] === c[e + p]; ) ++p;
+                p > k && (B = x, k = p);
+                if (258 === p) break;
+              }
+              s = new wa(k, e - B);
+              n ? n.length < s.length ? (A = c[e - 1], l[q++] = A, ++t[A], b(s, 0)) : b(n, -1) : s.length < K ? n = s : b(s, 0);
+            } else n ? b(n, -1) : (A = c[e], l[q++] = A, ++t[A]);
+          }
+          j.push(e);
+        }
+        l[q++] = 256;
+        t[256]++;
+        a.L = t;
+        a.K = z;
+        return H ? l.subarray(0, q) : l;
+      }
+      function ta(a, c) {
+        function b(a) {
+          var c = z[a][K[a]];
+          c === n ? (b(a + 1), b(a + 1)) : --E[c];
+          ++K[a];
+        }
+        var e = a.length, f = new la(572), d = new (H ? Uint8Array : Array)(e), g, h, m, j, s;
+        if (!H) for (j = 0; j < e; j++) d[j] = 0;
+        for (j = 0; j < e; ++j) 0 < a[j] && f.push(j, a[j]);
+        g = Array(f.length / 2);
+        h = new (H ? Uint32Array : Array)(f.length / 2);
+        if (1 === g.length) return d[f.pop().index] = 1, d;
+        j = 0;
+        for (s = f.length / 2; j < s; ++j) g[j] = f.pop(), h[j] = g[j].value;
+        var n = h.length, l = new (H ? Uint16Array : Array)(c), q = new (H ? Uint8Array : Array)(c), E = new (H ? Uint8Array : Array)(n), t = Array(c), z = Array(c), K = Array(c), A = (1 << c) - n, x = 1 << c - 1, B, k, p, D, C;
+        l[c - 1] = n;
+        for (k = 0; k < c; ++k) A < x ? q[k] = 0 : (q[k] = 1, A -= x), A <<= 1, l[c - 2 - k] = (l[c - 1 - k] / 2 | 0) + n;
+        l[0] = q[0];
+        t[0] = Array(l[0]);
+        z[0] = Array(l[0]);
+        for (k = 1; k < c; ++k) l[k] > 2 * l[k - 1] + q[k] && (l[k] = 2 * l[k - 1] + q[k]), 
+        t[k] = Array(l[k]), z[k] = Array(l[k]);
+        for (B = 0; B < n; ++B) E[B] = c;
+        for (p = 0; p < l[c - 1]; ++p) t[c - 1][p] = h[p], z[c - 1][p] = p;
+        for (B = 0; B < c; ++B) K[B] = 0;
+        1 === q[c - 1] && (--E[0], ++K[c - 1]);
+        for (k = c - 2; 0 <= k; --k) {
+          D = B = 0;
+          C = K[k + 1];
+          for (p = 0; p < l[k]; p++) D = t[k + 1][C] + t[k + 1][C + 1], D > h[B] ? (t[k][p] = D, 
+          z[k][p] = n, C += 2) : (t[k][p] = h[B], z[k][p] = B, ++B);
+          K[k] = 0;
+          1 === q[k] && b(k);
+        }
+        m = E;
+        j = 0;
+        for (s = g.length; j < s; ++j) d[g[j].index] = m[j];
+        return d;
+      }
+      function ua(a) {
+        var c = new (H ? Uint16Array : Array)(a.length), b = [], e = [], f = 0, d, g, h, m;
+        d = 0;
+        for (g = a.length; d < g; d++) b[a[d]] = 1 + (0 | b[a[d]]);
+        d = 1;
+        for (g = 16; d <= g; d++) e[d] = f, f += 0 | b[d], f > 1 << d && i("overcommitted"), 
+        f <<= 1;
+        65536 > f && i("undercommitted");
+        d = 0;
+        for (g = a.length; d < g; d++) {
+          f = e[a[d]];
+          e[a[d]] += 1;
+          h = c[d] = 0;
+          for (m = a[d]; h < m; h++) c[d] = c[d] << 1 | 1 & f, f >>>= 1;
+        }
+        return c;
+      }
+      function Da(a, c) {
+        this.input = a;
+        this.a = new (H ? Uint8Array : Array)(32768);
+        this.h = U.j;
+        var b = {}, e;
+        !c && (c = {}) || "number" !== typeof c.compressionType || (this.h = c.compressionType);
+        for (e in c) b[e] = c[e];
+        b.outputBuffer = this.a;
+        this.z = new ma(this.input, b);
+      }
+      var U = qa;
+      Da.prototype.n = function() {
+        var a, c, b, e, f, d, g, h = 0;
+        g = this.a;
+        a = Ea;
+        switch (a) {
+         case Ea:
+          c = Math.LOG2E * Math.log(32768) - 8;
+          break;
+
+         default:
+          i(Error("invalid compression method"));
+        }
+        b = c << 4 | a;
+        g[h++] = b;
+        switch (a) {
+         case Ea:
+          switch (this.h) {
+           case U.NONE:
+            f = 0;
+            break;
+
+           case U.r:
+            f = 1;
+            break;
+
+           case U.j:
+            f = 2;
+            break;
+
+           default:
+            i(Error("unsupported compression type"));
+          }
+          break;
+
+         default:
+          i(Error("invalid compression method"));
+        }
+        e = f << 6 | 0;
+        g[h++] = e | 31 - (256 * b + e) % 31;
+        d = ba(this.input);
+        this.z.b = h;
+        g = this.z.n();
+        h = g.length;
+        H && (g = new Uint8Array(g.buffer), g.length <= h + 4 && (this.a = new Uint8Array(g.length + 4), 
+        this.a.set(g), g = this.a), g = g.subarray(0, h + 4));
+        g[h++] = d >> 24 & 255;
+        g[h++] = d >> 16 & 255;
+        g[h++] = d >> 8 & 255;
+        g[h++] = 255 & d;
+        return g;
+      };
+      y("Zlib.Deflate", Da);
+      y("Zlib.Deflate.compress", (function(a, c) {
+        return new Da(a, c).n();
+      }));
+      y("Zlib.Deflate.CompressionType", U);
+      y("Zlib.Deflate.CompressionType.NONE", U.NONE);
+      y("Zlib.Deflate.CompressionType.FIXED", U.r);
+      y("Zlib.Deflate.CompressionType.DYNAMIC", U.j);
+      function V(a, c) {
+        this.k = [];
+        this.l = 32768;
+        this.e = this.g = this.c = this.q = 0;
+        this.input = H ? new Uint8Array(a) : a;
+        this.s = !1;
+        this.m = Fa;
+        this.B = !1;
+        !c && (c = {}) || (c.index && (this.c = c.index), c.bufferSize && (this.l = c.bufferSize), 
+        c.bufferType && (this.m = c.bufferType), c.resize && (this.B = c.resize));
+        switch (this.m) {
+         case Ga:
+          this.b = 32768;
+          this.a = new (H ? Uint8Array : Array)(32768 + this.l + 258);
+          break;
+
+         case Fa:
+          this.b = 0;
+          this.a = new (H ? Uint8Array : Array)(this.l);
+          this.f = this.J;
+          this.t = this.H;
+          this.o = this.I;
+          break;
+
+         default:
+          i(Error("invalid inflate mode"));
+        }
+      }
+      var Ga = 0, Fa = 1, Ha = {
+        D: Ga,
+        C: Fa
+      };
+      V.prototype.p = function() {
+        for (;!this.s; ) {
+          var a = X(this, 3);
+          1 & a && (this.s = v);
+          a >>>= 1;
+          switch (a) {
+           case 0:
+            var c = this.input, b = this.c, e = this.a, f = this.b, d = r, g = r, h = r, m = e.length, j = r;
+            this.e = this.g = 0;
+            d = c[b++];
+            d === r && i(Error("invalid uncompressed block header: LEN (first byte)"));
+            g = d;
+            d = c[b++];
+            d === r && i(Error("invalid uncompressed block header: LEN (second byte)"));
+            g |= d << 8;
+            d = c[b++];
+            d === r && i(Error("invalid uncompressed block header: NLEN (first byte)"));
+            h = d;
+            d = c[b++];
+            d === r && i(Error("invalid uncompressed block header: NLEN (second byte)"));
+            h |= d << 8;
+            g === ~h && i(Error("invalid uncompressed block header: length verify"));
+            b + g > c.length && i(Error("input buffer is broken"));
+            switch (this.m) {
+             case Ga:
+              for (;f + g > e.length; ) {
+                j = m - f;
+                g -= j;
+                if (H) e.set(c.subarray(b, b + j), f), f += j, b += j; else for (;j--; ) e[f++] = c[b++];
+                this.b = f;
+                e = this.f();
+                f = this.b;
+              }
+              break;
+
+             case Fa:
+              for (;f + g > e.length; ) e = this.f({
+                v: 2
+              });
+              break;
+
+             default:
+              i(Error("invalid inflate mode"));
+            }
+            if (H) e.set(c.subarray(b, b + g), f), f += g, b += g; else for (;g--; ) e[f++] = c[b++];
+            this.c = b;
+            this.b = f;
+            this.a = e;
+            break;
+
+           case 1:
+            this.o(Ia, Ja);
+            break;
+
+           case 2:
+            Ka(this);
+            break;
+
+           default:
+            i(Error("unknown BTYPE: " + a));
+          }
+        }
+        return this.t();
+      };
+      var La = [ 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 ], Za = H ? new Uint16Array(La) : La, $a = [ 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 258, 258 ], ab = H ? new Uint16Array($a) : $a, bb = [ 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 0, 0 ], cb = H ? new Uint8Array(bb) : bb, db = [ 1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577 ], eb = H ? new Uint16Array(db) : db, fb = [ 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13 ], gb = H ? new Uint8Array(fb) : fb, hb = new (H ? Uint8Array : Array)(288), Y, ib;
+      Y = 0;
+      for (ib = hb.length; Y < ib; ++Y) hb[Y] = 143 >= Y ? 8 : 255 >= Y ? 9 : 279 >= Y ? 7 : 8;
+      var Ia = S(hb), jb = new (H ? Uint8Array : Array)(30), kb, lb;
+      kb = 0;
+      for (lb = jb.length; kb < lb; ++kb) jb[kb] = 5;
+      var Ja = S(jb);
+      function X(a, c) {
+        for (var b = a.g, e = a.e, f = a.input, d = a.c, g; e < c; ) g = f[d++], g === r && i(Error("input buffer is broken")), 
+        b |= g << e, e += 8;
+        g = b & (1 << c) - 1;
+        a.g = b >>> c;
+        a.e = e - c;
+        a.c = d;
+        return g;
+      }
+      function mb(a, c) {
+        for (var b = a.g, e = a.e, f = a.input, d = a.c, g = c[0], h = c[1], m, j, s; e < h; ) m = f[d++], 
+        m === r && i(Error("input buffer is broken")), b |= m << e, e += 8;
+        j = g[b & (1 << h) - 1];
+        s = j >>> 16;
+        a.g = b >> s;
+        a.e = e - s;
+        a.c = d;
+        return 65535 & j;
+      }
+      function Ka(a) {
+        function c(a, b, c) {
+          var d, e, f, g;
+          for (g = 0; g < a; ) switch (d = mb(this, b), d) {
+           case 16:
+            for (f = 3 + X(this, 2); f--; ) c[g++] = e;
+            break;
+
+           case 17:
+            for (f = 3 + X(this, 3); f--; ) c[g++] = 0;
+            e = 0;
+            break;
+
+           case 18:
+            for (f = 11 + X(this, 7); f--; ) c[g++] = 0;
+            e = 0;
+            break;
+
+           default:
+            e = c[g++] = d;
+          }
+          return c;
+        }
+        var b = X(a, 5) + 257, e = X(a, 5) + 1, f = X(a, 4) + 4, d = new (H ? Uint8Array : Array)(Za.length), g, h, m, j;
+        for (j = 0; j < f; ++j) d[Za[j]] = X(a, 3);
+        g = S(d);
+        h = new (H ? Uint8Array : Array)(b);
+        m = new (H ? Uint8Array : Array)(e);
+        a.o(S(c.call(a, b, g, h)), S(c.call(a, e, g, m)));
+      }
+      V.prototype.o = function(a, c) {
+        var b = this.a, e = this.b;
+        this.u = a;
+        for (var f = b.length - 258, d, g, h, m; 256 !== (d = mb(this, a)); ) if (256 > d) e >= f && (this.b = e, 
+        b = this.f(), e = this.b), b[e++] = d; else {
+          g = d - 257;
+          m = ab[g];
+          0 < cb[g] && (m += X(this, cb[g]));
+          d = mb(this, c);
+          h = eb[d];
+          0 < gb[d] && (h += X(this, gb[d]));
+          e >= f && (this.b = e, b = this.f(), e = this.b);
+          for (;m--; ) b[e] = b[e++ - h];
+        }
+        for (;8 <= this.e; ) this.e -= 8, this.c--;
+        this.b = e;
+      };
+      V.prototype.I = function(a, c) {
+        var b = this.a, e = this.b;
+        this.u = a;
+        for (var f = b.length, d, g, h, m; 256 !== (d = mb(this, a)); ) if (256 > d) e >= f && (b = this.f(), 
+        f = b.length), b[e++] = d; else {
+          g = d - 257;
+          m = ab[g];
+          0 < cb[g] && (m += X(this, cb[g]));
+          d = mb(this, c);
+          h = eb[d];
+          0 < gb[d] && (h += X(this, gb[d]));
+          e + m > f && (b = this.f(), f = b.length);
+          for (;m--; ) b[e] = b[e++ - h];
+        }
+        for (;8 <= this.e; ) this.e -= 8, this.c--;
+        this.b = e;
+      };
+      V.prototype.f = function() {
+        var a = new (H ? Uint8Array : Array)(this.b - 32768), c = this.b - 32768, b, e, f = this.a;
+        if (H) a.set(f.subarray(32768, a.length)); else {
+          b = 0;
+          for (e = a.length; b < e; ++b) a[b] = f[b + 32768];
+        }
+        this.k.push(a);
+        this.q += a.length;
+        if (H) f.set(f.subarray(c, c + 32768)); else for (b = 0; 32768 > b; ++b) f[b] = f[c + b];
+        this.b = 32768;
+        return f;
+      };
+      V.prototype.J = function(a) {
+        var c, b = this.input.length / this.c + 1 | 0, e, f, d, g = this.input, h = this.a;
+        a && ("number" === typeof a.v && (b = a.v), "number" === typeof a.F && (b += a.F));
+        2 > b ? (e = (g.length - this.c) / this.u[2], d = e / 2 * 258 | 0, f = d < h.length ? h.length + d : h.length << 1) : f = h.length * b;
+        H ? (c = new Uint8Array(f), c.set(h)) : c = h;
+        return this.a = c;
+      };
+      V.prototype.t = function() {
+        var a = 0, c = this.a, b = this.k, e, f = new (H ? Uint8Array : Array)(this.q + (this.b - 32768)), d, g, h, m;
+        if (0 === b.length) return H ? this.a.subarray(32768, this.b) : this.a.slice(32768, this.b);
+        d = 0;
+        for (g = b.length; d < g; ++d) {
+          e = b[d];
+          h = 0;
+          for (m = e.length; h < m; ++h) f[a++] = e[h];
+        }
+        d = 32768;
+        for (g = this.b; d < g; ++d) f[a++] = c[d];
+        this.k = [];
+        return this.buffer = f;
+      };
+      V.prototype.H = function() {
+        var a, c = this.b;
+        H ? this.B ? (a = new Uint8Array(c), a.set(this.a.subarray(0, c))) : a = this.a.subarray(0, c) : (this.a.length > c && (this.a.length = c), 
+        a = this.a);
+        return this.buffer = a;
+      };
+      function nb(a, c) {
+        var b, e;
+        this.input = a;
+        this.c = 0;
+        !c && (c = {}) || (c.index && (this.c = c.index), c.verify && (this.M = c.verify));
+        b = a[this.c++];
+        e = a[this.c++];
+        switch (15 & b) {
+         case Ea:
+          this.method = Ea;
+          break;
+
+         default:
+          i(Error("unsupported compression method"));
+        }
+        0 !== ((b << 8) + e) % 31 && i(Error("invalid fcheck flag:" + ((b << 8) + e) % 31));
+        32 & e && i(Error("fdict flag is not supported"));
+        this.A = new V(a, {
+          index: this.c,
+          bufferSize: c.bufferSize,
+          bufferType: c.bufferType,
+          resize: c.resize
+        });
+      }
+      nb.prototype.p = function() {
+        var a = this.input, c, b;
+        c = this.A.p();
+        this.c = this.A.c;
+        this.M && (b = (a[this.c++] << 24 | a[this.c++] << 16 | a[this.c++] << 8 | a[this.c++]) >>> 0, 
+        b !== ba(c) && i(Error("invalid adler-32 checksum")));
+        return c;
+      };
+      y("Zlib.Inflate", nb);
+      y("Zlib.Inflate.BufferType", Ha);
+      Ha.ADAPTIVE = Ha.C;
+      Ha.BLOCK = Ha.D;
+      y("Zlib.Inflate.prototype.decompress", nb.prototype.p);
+      var ob = [ 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 ];
+      H && new Uint16Array(ob);
+      var pb = [ 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 258, 258 ];
+      H && new Uint16Array(pb);
+      var qb = [ 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 0, 0 ];
+      H && new Uint8Array(qb);
+      var rb = [ 1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577 ];
+      H && new Uint16Array(rb);
+      var sb = [ 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13 ];
+      H && new Uint8Array(sb);
+      var tb = new (H ? Uint8Array : Array)(288), Z, ub;
+      Z = 0;
+      for (ub = tb.length; Z < ub; ++Z) tb[Z] = 143 >= Z ? 8 : 255 >= Z ? 9 : 279 >= Z ? 7 : 8;
+      S(tb);
+      var vb = new (H ? Uint8Array : Array)(30), wb, xb;
+      wb = 0;
+      for (xb = vb.length; wb < xb; ++wb) vb[wb] = 5;
+      S(vb);
+      var Ea = 8;
+    }).call(window);
+    var _p = window.Zlib;
+    _p.Deflate = _p["Deflate"];
+    _p.Deflate.compress = _p.Deflate["compress"];
+    _p.Inflate = _p["Inflate"];
+    _p.Inflate.BufferType = _p.Inflate["BufferType"];
+    _p.Inflate.prototype.decompress = _p.Inflate.prototype["decompress"];
+    module.exports = _p;
+  }), {} ],
+  26: [ (function(require, module, exports) {
     var Node = require("../CCNode");
     var EventType = Node.EventType;
     var DirtyFlag = Node._LocalDirtyFlag;
@@ -5262,11 +6721,11 @@
       return this._quat;
     }), proto.setRotation);
   }), {
-    "../CCNode": 26,
-    "../renderer/render-engine": 145,
-    "../renderer/render-flow": 146
+    "../CCNode": 30,
+    "../renderer/render-engine": 156,
+    "../renderer/render-flow": 157
   } ],
-  23: [ (function(require, module, exports) {
+  27: [ (function(require, module, exports) {
     var debugInfos = require("../../DebugInfos") || {};
     var ERROR_MAP_URL = "https://github.com/cocos-creator/engine/blob/master/EngineErrorMap.md";
     var logList = void 0;
@@ -5407,7 +6866,7 @@
   }), {
     "../../DebugInfos": 1
   } ],
-  24: [ (function(require, module, exports) {
+  28: [ (function(require, module, exports) {
     var EventTarget = require("./event/event-target");
     var AutoReleaseUtils = require("./load-pipeline/auto-release-utils");
     var ComponentScheduler = require("./component-scheduler");
@@ -5782,17 +7241,17 @@
     cc.director = new cc.Director();
     module.exports = cc.director;
   }), {
-    "./CCGame": 25,
-    "./CCScheduler": 29,
-    "./component-scheduler": 50,
-    "./event-manager": 76,
-    "./event/event-target": 78,
-    "./load-pipeline/auto-release-utils": 88,
-    "./node-activator": 103,
-    "./platform/CCObject": 112,
-    "./renderer": 144
+    "./CCGame": 29,
+    "./CCScheduler": 33,
+    "./component-scheduler": 54,
+    "./event-manager": 81,
+    "./event/event-target": 83,
+    "./load-pipeline/auto-release-utils": 96,
+    "./node-activator": 111,
+    "./platform/CCObject": 120,
+    "./renderer": 155
   } ],
-  25: [ (function(require, module, exports) {
+  29: [ (function(require, module, exports) {
     var EventTarget = require("./event/event-target");
     require("../audio/CCAudioEngine");
     var debug = require("./CCDebug");
@@ -6128,13 +7587,13 @@
   }), {
     "../audio/CCAudioEngine": 21,
     "../core/renderer/utils/dynamic-atlas/manager": void 0,
-    "./CCDebug": 23,
-    "./event/event-target": 78,
-    "./platform/BKInputManager": 104,
-    "./platform/CCInputManager": 110,
-    "./renderer/index.js": 144
+    "./CCDebug": 27,
+    "./event/event-target": 83,
+    "./platform/BKInputManager": 112,
+    "./platform/CCInputManager": 118,
+    "./renderer/index.js": 155
   } ],
-  26: [ (function(require, module, exports) {
+  30: [ (function(require, module, exports) {
     "use strict";
     var BaseNode = require("./utils/base-node");
     var PrefabHelper = require("./utils/prefab-helper");
@@ -7506,20 +8965,20 @@
     js.getset(_p, "position", _p.getPosition, _p.setPosition, false, true);
     cc.Node = module.exports = Node;
   }), {
-    "./event-manager": 76,
-    "./event/event": 79,
-    "./event/event-target": 78,
-    "./platform/CCMacro": 111,
-    "./platform/js": 126,
-    "./renderer/render-engine": 145,
-    "./renderer/render-flow": 146,
-    "./utils/affine-transform": 176,
-    "./utils/base-node": 177,
-    "./utils/math-pools": 182,
-    "./utils/misc": 183,
-    "./utils/prefab-helper": 185
+    "./event-manager": 81,
+    "./event/event": 84,
+    "./event/event-target": 83,
+    "./platform/CCMacro": 119,
+    "./platform/js": 134,
+    "./renderer/render-engine": 156,
+    "./renderer/render-flow": 157,
+    "./utils/affine-transform": 191,
+    "./utils/base-node": 192,
+    "./utils/math-pools": 197,
+    "./utils/misc": 198,
+    "./utils/prefab-helper": 200
   } ],
-  27: [ (function(require, module, exports) {
+  31: [ (function(require, module, exports) {
     "use strict";
     var Node = require("./CCNode");
     var RenderFlow = require("./renderer/render-flow");
@@ -7613,11 +9072,11 @@
     cc.js.getset(PrivateNode.prototype, "position", PrivateNode.prototype.getPosition, PrivateNode.prototype.setPosition);
     cc.PrivateNode = module.exports = PrivateNode;
   }), {
-    "./CCNode": 26,
-    "./renderer/render-engine": 145,
-    "./renderer/render-flow": 146
+    "./CCNode": 30,
+    "./renderer/render-engine": 156,
+    "./renderer/render-flow": 157
   } ],
-  28: [ (function(require, module, exports) {
+  32: [ (function(require, module, exports) {
     var NIL = function() {};
     cc.Scene = cc.Class({
       name: "cc.Scene",
@@ -7666,9 +9125,9 @@
     });
     module.exports = cc.Scene;
   }), {
-    "./CCNode": 26
+    "./CCNode": 30
   } ],
-  29: [ (function(require, module, exports) {
+  33: [ (function(require, module, exports) {
     var js = require("./platform/js");
     var IdGenerater = require("./platform/id-generater");
     var MAX_POOL_SIZE = 20;
@@ -8186,10 +9645,10 @@
     cc.Scheduler.PRIORITY_NON_SYSTEM = cc.Scheduler.PRIORITY_SYSTEM + 1;
     module.exports = cc.Scheduler;
   }), {
-    "./platform/id-generater": 122,
-    "./platform/js": 126
+    "./platform/id-generater": 130,
+    "./platform/js": 134
   } ],
-  30: [ (function(require, module, exports) {
+  34: [ (function(require, module, exports) {
     var RawAsset = require("./CCRawAsset");
     cc.Asset = cc.Class({
       name: "cc.Asset",
@@ -8235,9 +9694,9 @@
     });
     module.exports = cc.Asset;
   }), {
-    "./CCRawAsset": 38
+    "./CCRawAsset": 42
   } ],
-  31: [ (function(require, module, exports) {
+  35: [ (function(require, module, exports) {
     var Asset = require("./CCAsset");
     var EventTarget = require("../event/event-target");
     var LoadMode = cc.Enum({
@@ -8290,10 +9749,10 @@
     cc.AudioClip = AudioClip;
     module.exports = AudioClip;
   }), {
-    "../event/event-target": 78,
-    "./CCAsset": 30
+    "../event/event-target": 83,
+    "./CCAsset": 34
   } ],
-  32: [ (function(require, module, exports) {
+  36: [ (function(require, module, exports) {
     var BitmapFont = cc.Class({
       name: "cc.BitmapFont",
       extends: cc.Font,
@@ -8314,7 +9773,7 @@
     cc.BitmapFont = BitmapFont;
     module.exports = BitmapFont;
   }), {} ],
-  33: [ (function(require, module, exports) {
+  37: [ (function(require, module, exports) {
     var BufferAsset = cc.Class({
       name: "cc.BufferAsset",
       extends: cc.Asset,
@@ -8335,14 +9794,14 @@
     });
     cc.BufferAsset = module.exports = BufferAsset;
   }), {} ],
-  34: [ (function(require, module, exports) {
+  38: [ (function(require, module, exports) {
     var Font = cc.Class({
       name: "cc.Font",
       extends: cc.Asset
     });
     cc.Font = module.exports = Font;
   }), {} ],
-  35: [ (function(require, module, exports) {
+  39: [ (function(require, module, exports) {
     var JsonAsset = cc.Class({
       name: "cc.JsonAsset",
       extends: cc.Asset,
@@ -8352,7 +9811,7 @@
     });
     module.exports = cc.JsonAsset = JsonAsset;
   }), {} ],
-  36: [ (function(require, module, exports) {
+  40: [ (function(require, module, exports) {
     var LabelAtlas = cc.Class({
       name: "cc.LabelAtlas",
       extends: cc.BitmapFont
@@ -8360,7 +9819,7 @@
     cc.LabelAtlas = LabelAtlas;
     module.exports = LabelAtlas;
   }), {} ],
-  37: [ (function(require, module, exports) {
+  41: [ (function(require, module, exports) {
     var OptimizationPolicy = cc.Enum({
       AUTO: 0,
       SINGLE_INSTANCE: 1,
@@ -8416,9 +9875,9 @@
     cc.Prefab = module.exports = Prefab;
     cc.js.obsolete(cc, "cc._Prefab", "Prefab");
   }), {
-    "../platform/instantiate-jit": 124
+    "../platform/instantiate-jit": 132
   } ],
-  38: [ (function(require, module, exports) {
+  42: [ (function(require, module, exports) {
     var CCObject = require("../platform/CCObject");
     var js = require("../platform/js");
     cc.RawAsset = cc.Class({
@@ -8439,10 +9898,10 @@
     }));
     module.exports = cc.RawAsset;
   }), {
-    "../platform/CCObject": 112,
-    "../platform/js": 126
+    "../platform/CCObject": 120,
+    "../platform/js": 134
   } ],
-  39: [ (function(require, module, exports) {
+  43: [ (function(require, module, exports) {
     var renderer = require("../renderer");
     var renderEngine = require("../renderer/render-engine");
     var gfx = renderEngine.gfx;
@@ -8514,11 +9973,11 @@
     });
     cc.RenderTexture = module.exports = RenderTexture;
   }), {
-    "../renderer": 144,
-    "../renderer/render-engine": 145,
-    "./CCTexture2D": 46
+    "../renderer": 155,
+    "../renderer/render-engine": 156,
+    "./CCTexture2D": 50
   } ],
-  40: [ (function(require, module, exports) {
+  44: [ (function(require, module, exports) {
     var Scene = cc.Class({
       name: "cc.SceneAsset",
       extends: cc.Asset,
@@ -8530,7 +9989,7 @@
     cc.SceneAsset = Scene;
     module.exports = Scene;
   }), {} ],
-  41: [ (function(require, module, exports) {
+  45: [ (function(require, module, exports) {
     var Script = cc.Class({
       name: "cc.Script",
       extends: cc.Asset
@@ -8552,7 +10011,7 @@
     });
     cc._TypeScript = TypeScript;
   }), {} ],
-  42: [ (function(require, module, exports) {
+  46: [ (function(require, module, exports) {
     var SpriteAtlas = cc.Class({
       name: "cc.SpriteAtlas",
       extends: cc.Asset,
@@ -8585,7 +10044,7 @@
     cc.SpriteAtlas = SpriteAtlas;
     module.exports = SpriteAtlas;
   }), {} ],
-  43: [ (function(require, module, exports) {
+  47: [ (function(require, module, exports) {
     var EventTarget = require("../event/event-target");
     var textureUtil = require("../utils/texture-util");
     var INSET_LEFT = 0;
@@ -8903,11 +10362,11 @@
     cc.SpriteFrame = SpriteFrame;
     module.exports = SpriteFrame;
   }), {
-    "../assets/CCAsset": 30,
-    "../event/event-target": 78,
-    "../utils/texture-util": 190
+    "../assets/CCAsset": 34,
+    "../event/event-target": 83,
+    "../utils/texture-util": 205
   } ],
-  44: [ (function(require, module, exports) {
+  48: [ (function(require, module, exports) {
     var Font = require("./CCFont");
     var TTFFont = cc.Class({
       name: "cc.TTFFont",
@@ -8928,9 +10387,9 @@
     });
     cc.TTFFont = module.exports = TTFFont;
   }), {
-    "./CCFont": 34
+    "./CCFont": 38
   } ],
-  45: [ (function(require, module, exports) {
+  49: [ (function(require, module, exports) {
     var TextAsset = cc.Class({
       name: "cc.TextAsset",
       extends: cc.Asset,
@@ -8943,7 +10402,7 @@
     });
     module.exports = cc.TextAsset = TextAsset;
   }), {} ],
-  46: [ (function(require, module, exports) {
+  50: [ (function(require, module, exports) {
     var EventTarget = require("../event/event-target");
     var renderEngine = require("../renderer/render-engine");
     var renderer = require("../renderer");
@@ -9281,14 +10740,14 @@
     });
     cc.Texture2D = module.exports = Texture2D;
   }), {
-    "../assets/CCAsset": 30,
-    "../event/event-target": 78,
-    "../platform/CCClass": 106,
-    "../platform/id-generater": 122,
-    "../renderer": 144,
-    "../renderer/render-engine": 145
+    "../assets/CCAsset": 34,
+    "../event/event-target": 83,
+    "../platform/CCClass": 114,
+    "../platform/id-generater": 130,
+    "../renderer": 155,
+    "../renderer/render-engine": 156
   } ],
-  47: [ (function(require, module, exports) {
+  51: [ (function(require, module, exports) {
     require("./CCRawAsset");
     require("./CCAsset");
     require("./CCFont");
@@ -9307,25 +10766,25 @@
     require("./CCJsonAsset");
     require("./CCBufferAsset");
   }), {
-    "./CCAsset": 30,
-    "./CCAudioClip": 31,
-    "./CCBitmapFont": 32,
-    "./CCBufferAsset": 33,
-    "./CCFont": 34,
-    "./CCJsonAsset": 35,
-    "./CCLabelAtlas": 36,
-    "./CCPrefab": 37,
-    "./CCRawAsset": 38,
-    "./CCRenderTexture": 39,
-    "./CCSceneAsset": 40,
-    "./CCScripts": 41,
-    "./CCSpriteAtlas": 42,
-    "./CCSpriteFrame": 43,
-    "./CCTTFFont": 44,
-    "./CCTextAsset": 45,
-    "./CCTexture2D": 46
+    "./CCAsset": 34,
+    "./CCAudioClip": 35,
+    "./CCBitmapFont": 36,
+    "./CCBufferAsset": 37,
+    "./CCFont": 38,
+    "./CCJsonAsset": 39,
+    "./CCLabelAtlas": 40,
+    "./CCPrefab": 41,
+    "./CCRawAsset": 42,
+    "./CCRenderTexture": 43,
+    "./CCSceneAsset": 44,
+    "./CCScripts": 45,
+    "./CCSpriteAtlas": 46,
+    "./CCSpriteFrame": 47,
+    "./CCTTFFont": 48,
+    "./CCTextAsset": 49,
+    "./CCTexture2D": 50
   } ],
-  48: [ (function(require, module, exports) {
+  52: [ (function(require, module, exports) {
     var Event = require("../CCNode").EventType;
     var TOP = 1;
     var MID = 2;
@@ -9570,9 +11029,9 @@
     };
     false;
   }), {
-    "../CCNode": 26
+    "../CCNode": 30
   } ],
-  49: [ (function(require, module, exports) {
+  53: [ (function(require, module, exports) {
     var AffineTrans = require("../utils/affine-transform");
     var renderEngine = require("../renderer/render-engine");
     var renderer = require("../renderer/index");
@@ -9921,12 +11380,12 @@
     module.exports = cc.Camera = Camera;
   }), {
     "../3d/geom-utils/ray": void 0,
-    "../CCGame": 25,
-    "../renderer/index": 144,
-    "../renderer/render-engine": 145,
-    "../utils/affine-transform": 176
+    "../CCGame": 29,
+    "../renderer/index": 155,
+    "../renderer/render-engine": 156,
+    "../utils/affine-transform": 191
   } ],
-  50: [ (function(require, module, exports) {
+  54: [ (function(require, module, exports) {
     require("./platform/CCClass");
     var Flags = require("./platform/CCObject").Flags;
     var jsArray = require("./platform/js").array;
@@ -10159,12 +11618,12 @@
     });
     module.exports = ComponentScheduler;
   }), {
-    "./platform/CCClass": 106,
-    "./platform/CCObject": 112,
-    "./platform/js": 126,
-    "./utils/misc": 183
+    "./platform/CCClass": 114,
+    "./platform/CCObject": 120,
+    "./platform/js": 134,
+    "./utils/misc": 198
   } ],
-  51: [ (function(require, module, exports) {
+  55: [ (function(require, module, exports) {
     var AnimationAnimator = require("../../animation/animation-animator");
     var AnimationClip = require("../../animation/animation-clip");
     var EventTarget = require("../event/event-target");
@@ -10424,11 +11883,11 @@
   }), {
     "../../animation/animation-animator": 9,
     "../../animation/animation-clip": 10,
-    "../event/event-target": 78,
-    "../platform/js": 126,
-    "./CCComponent": 56
+    "../event/event-target": 83,
+    "../platform/js": 134,
+    "./CCComponent": 60
   } ],
-  52: [ (function(require, module, exports) {
+  56: [ (function(require, module, exports) {
     var misc = require("../utils/misc");
     var Component = require("./CCComponent");
     var AudioClip = require("../assets/CCAudioClip");
@@ -10600,11 +12059,11 @@
     });
     cc.AudioSource = module.exports = AudioSource;
   }), {
-    "../assets/CCAudioClip": 31,
-    "../utils/misc": 183,
-    "./CCComponent": 56
+    "../assets/CCAudioClip": 35,
+    "../utils/misc": 198,
+    "./CCComponent": 60
   } ],
-  53: [ (function(require, module, exports) {
+  57: [ (function(require, module, exports) {
     var BlockEvents = [ "touchstart", "touchmove", "touchend", "mousedown", "mousemove", "mouseup", "mouseenter", "mouseleave", "mousewheel" ];
     function stopPropagation(event) {
       event.stopPropagation();
@@ -10626,9 +12085,9 @@
     });
     cc.BlockInputEvents = module.exports = BlockInputEvents;
   }), {
-    "./CCComponent": 56
+    "./CCComponent": 60
   } ],
-  54: [ (function(require, module, exports) {
+  58: [ (function(require, module, exports) {
     var Component = require("./CCComponent");
     var misc = require("../utils/misc");
     var Transition = cc.Enum({
@@ -11052,10 +12511,10 @@
     });
     cc.Button = module.exports = Button;
   }), {
-    "../utils/misc": 183,
-    "./CCComponent": 56
+    "../utils/misc": 198,
+    "./CCComponent": 60
   } ],
-  55: [ (function(require, module, exports) {
+  59: [ (function(require, module, exports) {
     var Camera = require("../camera/CCCamera");
     var Component = require("./CCComponent");
     var Canvas = cc.Class({
@@ -11168,10 +12627,10 @@
     });
     cc.Canvas = module.exports = Canvas;
   }), {
-    "../camera/CCCamera": 49,
-    "./CCComponent": 56
+    "../camera/CCCamera": 53,
+    "./CCComponent": 60
   } ],
-  56: [ (function(require, module, exports) {
+  60: [ (function(require, module, exports) {
     var CCObject = require("../platform/CCObject");
     var js = require("../platform/js");
     var idGenerater = new (require("../platform/id-generater"))("Comp");
@@ -11325,11 +12784,11 @@
     Component.prototype.__scriptUuid = "";
     cc.Component = module.exports = Component;
   }), {
-    "../platform/CCObject": 112,
-    "../platform/id-generater": 122,
-    "../platform/js": 126
+    "../platform/CCObject": 120,
+    "../platform/id-generater": 130,
+    "../platform/js": 134
   } ],
-  57: [ (function(require, module, exports) {
+  61: [ (function(require, module, exports) {
     cc.Component.EventHandler = cc.Class({
       name: "cc.ClickEvent",
       properties: {
@@ -11401,7 +12860,7 @@
       }
     });
   }), {} ],
-  58: [ (function(require, module, exports) {
+  62: [ (function(require, module, exports) {
     var macro = require("../platform/CCMacro");
     var RenderComponent = require("./CCRenderComponent");
     var renderEngine = require("../renderer/render-engine");
@@ -11734,12 +13193,12 @@
     });
     cc.Label = module.exports = Label;
   }), {
-    "../platform/CCMacro": 111,
-    "../renderer/render-engine": 145,
-    "../renderer/render-flow": 146,
-    "./CCRenderComponent": 63
+    "../platform/CCMacro": 119,
+    "../renderer/render-engine": 156,
+    "../renderer/render-flow": 157,
+    "./CCRenderComponent": 68
   } ],
-  59: [ (function(require, module, exports) {
+  63: [ (function(require, module, exports) {
     var LabelOutline = cc.Class({
       name: "cc.LabelOutline",
       extends: require("./CCComponent"),
@@ -11779,9 +13238,9 @@
     });
     cc.LabelOutline = module.exports = LabelOutline;
   }), {
-    "./CCComponent": 56
+    "./CCComponent": 60
   } ],
-  60: [ (function(require, module, exports) {
+  64: [ (function(require, module, exports) {
     var NodeEvent = require("../CCNode").EventType;
     var Type = cc.Enum({
       NONE: 0,
@@ -12343,10 +13802,288 @@
     });
     cc.Layout = module.exports = Layout;
   }), {
-    "../CCNode": 26,
-    "./CCComponent": 56
+    "../CCNode": 30,
+    "./CCComponent": 60
   } ],
-  61: [ (function(require, module, exports) {
+  65: [ (function(require, module, exports) {
+    var misc = require("../utils/misc");
+    var renderEngine = require("../renderer/render-engine");
+    var math = renderEngine.math;
+    var StencilMaterial = renderEngine.StencilMaterial;
+    var RenderComponent = require("./CCRenderComponent");
+    var RenderFlow = require("../renderer/render-flow");
+    var Graphics = require("../graphics/graphics");
+    var Node = require("../CCNode");
+    var _vec2_temp = cc.v2();
+    var _mat4_temp = math.mat4.create();
+    var _circlepoints = [];
+    function _calculateCircle(center, radius, segements) {
+      _circlepoints.length = 0;
+      var anglePerStep = 2 * Math.PI / segements;
+      for (var step = 0; step < segements; ++step) _circlepoints.push(cc.v2(radius.x * Math.cos(anglePerStep * step) + center.x, radius.y * Math.sin(anglePerStep * step) + center.y));
+      return _circlepoints;
+    }
+    var MaskType = cc.Enum({
+      RECT: 0,
+      ELLIPSE: 1,
+      IMAGE_STENCIL: 2
+    });
+    var SEGEMENTS_MIN = 3;
+    var SEGEMENTS_MAX = 1e4;
+    var Mask = cc.Class({
+      name: "cc.Mask",
+      extends: RenderComponent,
+      editor: false,
+      ctor: function() {
+        this._graphics = null;
+        this._clearGraphics = null;
+      },
+      properties: {
+        _spriteFrame: {
+          default: null,
+          type: cc.SpriteFrame
+        },
+        _type: MaskType.RECT,
+        type: {
+          get: function() {
+            return this._type;
+          },
+          set: function(value) {
+            this._type = value;
+            if (this._type !== MaskType.IMAGE_STENCIL) {
+              this.spriteFrame = null;
+              this.alphaThreshold = 0;
+              this._updateGraphics();
+            }
+            if (this._renderData) {
+              this.destroyRenderData(this._renderData);
+              this._renderData = null;
+            }
+            this._activateMaterial();
+          },
+          type: MaskType,
+          tooltip: false
+        },
+        spriteFrame: {
+          type: cc.SpriteFrame,
+          tooltip: false,
+          get: function() {
+            return this._spriteFrame;
+          },
+          set: function(value) {
+            var lastSprite = this._spriteFrame;
+            false;
+            if (lastSprite === value) return;
+            this._spriteFrame = value;
+            this._applySpriteFrame(lastSprite);
+          }
+        },
+        alphaThreshold: {
+          default: 0,
+          type: cc.Float,
+          range: [ 0, 1, .1 ],
+          slide: true,
+          tooltip: false,
+          notify: function() {
+            if (cc.game.renderType === cc.game.RENDER_TYPE_CANVAS) {
+              cc.warnID(4201);
+              return;
+            }
+            if (this._material) {
+              this._material.alphaThreshold = this.alphaThreshold;
+              this._material.updateHash();
+            }
+          }
+        },
+        inverted: {
+          default: false,
+          type: cc.Boolean,
+          tooltip: false,
+          notify: function() {
+            if (cc.game.renderType === cc.game.RENDER_TYPE_CANVAS) {
+              cc.warnID(4202);
+              return;
+            }
+          }
+        },
+        _segments: 64,
+        segements: {
+          get: function() {
+            return this._segments;
+          },
+          set: function(value) {
+            this._segments = misc.clampf(value, SEGEMENTS_MIN, SEGEMENTS_MAX);
+            this._updateGraphics();
+          },
+          type: cc.Integer,
+          tooltip: false
+        },
+        _resizeToTarget: {
+          animatable: false,
+          set: function(value) {
+            value && this._resizeNodeToTargetNode();
+          }
+        }
+      },
+      statics: {
+        Type: MaskType
+      },
+      onLoad: function() {
+        this._createGraphics();
+      },
+      onRestore: function() {
+        this._createGraphics();
+        this._type !== MaskType.IMAGE_STENCIL && this._updateGraphics();
+      },
+      onEnable: function() {
+        this._super();
+        if (this._type === MaskType.IMAGE_STENCIL) {
+          if (!this._spriteFrame || !this._spriteFrame.textureLoaded()) {
+            this.markForRender(false);
+            if (this._spriteFrame) {
+              this._spriteFrame.once("load", this._onTextureLoaded, this);
+              this._spriteFrame.ensureLoadTexture();
+            }
+          }
+        } else this._updateGraphics();
+        this.node.on(cc.Node.EventType.POSITION_CHANGED, this._updateGraphics, this);
+        this.node.on(cc.Node.EventType.ROTATION_CHANGED, this._updateGraphics, this);
+        this.node.on(cc.Node.EventType.SCALE_CHANGED, this._updateGraphics, this);
+        this.node.on(cc.Node.EventType.SIZE_CHANGED, this._updateGraphics, this);
+        this.node.on(cc.Node.EventType.ANCHOR_CHANGED, this._updateGraphics, this);
+        this.node._renderFlag |= RenderFlow.FLAG_POST_RENDER;
+        this._activateMaterial();
+      },
+      onDisable: function() {
+        this._super();
+        this.node.off(cc.Node.EventType.POSITION_CHANGED, this._updateGraphics, this);
+        this.node.off(cc.Node.EventType.ROTATION_CHANGED, this._updateGraphics, this);
+        this.node.off(cc.Node.EventType.SCALE_CHANGED, this._updateGraphics, this);
+        this.node.off(cc.Node.EventType.SIZE_CHANGED, this._updateGraphics, this);
+        this.node.off(cc.Node.EventType.ANCHOR_CHANGED, this._updateGraphics, this);
+        this.node._renderFlag &= ~RenderFlow.FLAG_POST_RENDER;
+      },
+      onDestroy: function() {
+        this._super();
+        this._removeGraphics();
+      },
+      _resizeNodeToTargetNode: false,
+      _onTextureLoaded: function() {
+        if (this._renderData) {
+          this._renderData.uvDirty = true;
+          this._renderData.vertDirty = true;
+          this.markForUpdateRenderData(true);
+        }
+        this.enabledInHierarchy && this._activateMaterial();
+      },
+      _applySpriteFrame: function(oldFrame) {
+        oldFrame && oldFrame.off && oldFrame.off("load", this._onTextureLoaded, this);
+        var spriteFrame = this._spriteFrame;
+        if (spriteFrame) if (spriteFrame.textureLoaded()) this._onTextureLoaded(null); else {
+          spriteFrame.once("load", this._onTextureLoaded, this);
+          spriteFrame.ensureLoadTexture();
+        }
+      },
+      _activateMaterial: function() {
+        if (this._type === MaskType.IMAGE_STENCIL && (!this.spriteFrame || !this.spriteFrame.textureLoaded())) {
+          this.markForRender(false);
+          return;
+        }
+        if (cc.game.renderType !== cc.game.RENDER_TYPE_CANVAS) {
+          this._material || (this._material = new StencilMaterial());
+          if (this._type === MaskType.IMAGE_STENCIL) {
+            var texture = this.spriteFrame.getTexture();
+            this._material.useModel = false;
+            this._material.useTexture = true;
+            this._material.useColor = true;
+            this._material.texture = texture;
+            this._material.alphaThreshold = this.alphaThreshold;
+          } else {
+            this._material.useModel = true;
+            this._material.useTexture = false;
+            this._material.useColor = false;
+          }
+        }
+        this.markForRender(true);
+      },
+      _createGraphics: function() {
+        if (!this._graphics) {
+          this._graphics = new Graphics();
+          this._graphics.node = this.node;
+          this._graphics.lineWidth = 0;
+          this._graphics.strokeColor = cc.color(0, 0, 0, 0);
+        }
+        if (!this._clearGraphics) {
+          this._clearGraphics = new Graphics();
+          this._clearGraphics.node = new Node();
+          this._clearGraphics._activateMaterial();
+          this._clearGraphics.lineWidth = 0;
+          this._clearGraphics.rect(0, 0, cc.visibleRect.width, cc.visibleRect.height);
+          this._clearGraphics.fill();
+        }
+      },
+      _updateGraphics: function() {
+        var node = this.node;
+        var graphics = this._graphics;
+        graphics.clear(false);
+        var width = node._contentSize.width;
+        var height = node._contentSize.height;
+        var x = -width * node._anchorPoint.x;
+        var y = -height * node._anchorPoint.y;
+        if (this._type === MaskType.RECT) graphics.rect(x, y, width, height); else if (this._type === MaskType.ELLIPSE) {
+          var center = cc.v2(x + width / 2, y + height / 2);
+          var radius = {
+            x: width / 2,
+            y: height / 2
+          };
+          var points = _calculateCircle(center, radius, this._segments);
+          for (var i = 0; i < points.length; ++i) {
+            var point = points[i];
+            0 === i ? graphics.moveTo(point.x, point.y) : graphics.lineTo(point.x, point.y);
+          }
+          graphics.close();
+        }
+        cc.game.renderType === cc.game.RENDER_TYPE_CANVAS ? graphics.stroke() : graphics.fill();
+      },
+      _removeGraphics: function() {
+        this._graphics && this._graphics.destroy();
+        this._clearGraphics && this._clearGraphics.destroy();
+      },
+      _hitTest: function(cameraPt) {
+        var node = this.node;
+        var size = node.getContentSize(), w = size.width, h = size.height, testPt = _vec2_temp;
+        node._updateWorldMatrix();
+        math.mat4.invert(_mat4_temp, node._worldMatrix);
+        math.vec2.transformMat4(testPt, cameraPt, _mat4_temp);
+        testPt.x += node._anchorPoint.x * w;
+        testPt.y += node._anchorPoint.y * h;
+        if (this.type === MaskType.RECT || this.type === MaskType.IMAGE_STENCIL) return testPt.x >= 0 && testPt.y >= 0 && testPt.x <= w && testPt.y <= h;
+        if (this.type === MaskType.ELLIPSE) {
+          var rx = w / 2, ry = h / 2;
+          var px = testPt.x - .5 * w, py = testPt.y - .5 * h;
+          return px * px / (rx * rx) + py * py / (ry * ry) < 1;
+        }
+      },
+      markForUpdateRenderData: function(enable) {
+        enable && this.enabledInHierarchy ? this.node._renderFlag |= RenderFlow.FLAG_UPDATE_RENDER_DATA : enable || (this.node._renderFlag &= ~RenderFlow.FLAG_UPDATE_RENDER_DATA);
+      },
+      markForRender: function(enable) {
+        enable && this.enabledInHierarchy ? this.node._renderFlag |= RenderFlow.FLAG_RENDER | RenderFlow.FLAG_UPDATE_RENDER_DATA | RenderFlow.FLAG_POST_RENDER : enable || (this.node._renderFlag &= ~(RenderFlow.FLAG_RENDER | RenderFlow.FLAG_POST_RENDER));
+      },
+      disableRender: function() {
+        this.node._renderFlag &= ~(RenderFlow.FLAG_RENDER | RenderFlow.FLAG_UPDATE_RENDER_DATA | RenderFlow.FLAG_POST_RENDER);
+      }
+    });
+    cc.Mask = module.exports = Mask;
+  }), {
+    "../CCNode": 30,
+    "../graphics/graphics": 87,
+    "../renderer/render-engine": 156,
+    "../renderer/render-flow": 157,
+    "../utils/misc": 198,
+    "./CCRenderComponent": 68
+  } ],
+  66: [ (function(require, module, exports) {
     var RenderComponent = require("../components/CCRenderComponent");
     var SpriteMaterial = require("../renderer/render-engine").SpriteMaterial;
     var textureUtil = require("../utils/texture-util");
@@ -12486,11 +14223,11 @@
     });
     cc.MotionStreak = module.exports = MotionStreak;
   }), {
-    "../components/CCRenderComponent": 63,
-    "../renderer/render-engine": 145,
-    "../utils/texture-util": 190
+    "../components/CCRenderComponent": 68,
+    "../renderer/render-engine": 156,
+    "../utils/texture-util": 205
   } ],
-  62: [ (function(require, module, exports) {
+  67: [ (function(require, module, exports) {
     var misc = require("../utils/misc");
     var Component = require("./CCComponent");
     var Mode = cc.Enum({
@@ -12623,10 +14360,10 @@
     });
     cc.ProgressBar = module.exports = ProgressBar;
   }), {
-    "../utils/misc": 183,
-    "./CCComponent": 56
+    "../utils/misc": 198,
+    "./CCComponent": 60
   } ],
-  63: [ (function(require, module, exports) {
+  68: [ (function(require, module, exports) {
     var Component = require("./CCComponent");
     var renderEngine = require("../renderer/render-engine");
     var RenderFlow = require("../renderer/render-flow");
@@ -12747,12 +14484,12 @@
     RenderComponent._postAssembler = null;
     cc.RenderComponent = module.exports = RenderComponent;
   }), {
-    "../platform/CCMacro": 111,
-    "../renderer/render-engine": 145,
-    "../renderer/render-flow": 146,
-    "./CCComponent": 56
+    "../platform/CCMacro": 119,
+    "../renderer/render-engine": 156,
+    "../renderer/render-flow": 157,
+    "./CCComponent": 60
   } ],
-  64: [ (function(require, module, exports) {
+  69: [ (function(require, module, exports) {
     var misc = require("../utils/misc");
     var Component = require("./CCComponent");
     var GETTINGSHORTERFACTOR = 20;
@@ -12947,10 +14684,10 @@
     });
     cc.Scrollbar = module.exports = Scrollbar;
   }), {
-    "../utils/misc": 183,
-    "./CCComponent": 56
+    "../utils/misc": 198,
+    "./CCComponent": 60
   } ],
-  65: [ (function(require, module, exports) {
+  70: [ (function(require, module, exports) {
     var NodeEvent = require("../CCNode").EventType;
     var NUMBER_OF_GATHERED_TOUCHES_FOR_MOVE_SPEED = 5;
     var OUT_OF_BOUNDARY_BREAKING_FACTOR = .05;
@@ -13748,10 +15485,10 @@
     });
     cc.ScrollView = module.exports = ScrollView;
   }), {
-    "../CCNode": 26,
-    "./CCViewGroup": 67
+    "../CCNode": 30,
+    "./CCViewGroup": 72
   } ],
-  66: [ (function(require, module, exports) {
+  71: [ (function(require, module, exports) {
     var misc = require("../utils/misc");
     var NodeEvent = require("../CCNode").EventType;
     var RenderComponent = require("./CCRenderComponent");
@@ -14048,22 +15785,22 @@
     false;
     cc.Sprite = module.exports = Sprite;
   }), {
-    "../CCNode": 26,
-    "../renderer/render-engine": 145,
-    "../renderer/render-flow": 146,
-    "../utils/misc": 183,
-    "./CCRenderComponent": 63
+    "../CCNode": 30,
+    "../renderer/render-engine": 156,
+    "../renderer/render-flow": 157,
+    "../utils/misc": 198,
+    "./CCRenderComponent": 68
   } ],
-  67: [ (function(require, module, exports) {
+  72: [ (function(require, module, exports) {
     var ViewGroup = cc.Class({
       name: "cc.ViewGroup",
       extends: require("./CCComponent")
     });
     cc.ViewGroup = module.exports = ViewGroup;
   }), {
-    "./CCComponent": 56
+    "./CCComponent": 60
   } ],
-  68: [ (function(require, module, exports) {
+  73: [ (function(require, module, exports) {
     var WidgetManager = require("../base-ui/CCWidgetManager");
     var AlignMode = WidgetManager.AlignMode;
     var AlignFlags = WidgetManager._AlignFlags;
@@ -14364,10 +16101,10 @@
     });
     cc.Widget = module.exports = Widget;
   }), {
-    "../base-ui/CCWidgetManager": 48,
-    "./CCComponent": 56
+    "../base-ui/CCWidgetManager": 52,
+    "./CCComponent": 60
   } ],
-  69: [ (function(require, module, exports) {
+  74: [ (function(require, module, exports) {
     var Component = require("./CCComponent");
     var WXSubContextView = void 0;
     true, true;
@@ -14377,44 +16114,44 @@
     });
     cc.WXSubContextView = module.exports = WXSubContextView;
   }), {
-    "./CCComponent": 56
+    "./CCComponent": 60
   } ],
-  70: [ (function(require, module, exports) {
+  75: [ (function(require, module, exports) {
     require("./CCComponent");
     require("./CCComponentEventHandler");
     require("./missing-script");
     var components = [ require("./CCSprite"), require("./CCWidget"), require("./CCCanvas"), require("./CCAudioSource"), require("./CCAnimation"), require("./CCButton"), require("./CCLabel"), require("./CCProgressBar"), require("./CCMask"), require("./CCScrollBar"), require("./CCScrollView"), require("./CCPageViewIndicator"), require("./CCPageView"), require("./CCSlider"), require("./CCLayout"), require("./editbox/CCEditBox"), require("./CCLabelOutline"), require("./CCRichText"), require("./CCToggleContainer"), require("./CCToggleGroup"), require("./CCToggle"), require("./CCBlockInputEvents"), require("./CCMotionStreak"), require("./WXSubContextView") ];
     module.exports = components;
   }), {
-    "./CCAnimation": 51,
-    "./CCAudioSource": 52,
-    "./CCBlockInputEvents": 53,
-    "./CCButton": 54,
-    "./CCCanvas": 55,
-    "./CCComponent": 56,
-    "./CCComponentEventHandler": 57,
-    "./CCLabel": 58,
-    "./CCLabelOutline": 59,
-    "./CCLayout": 60,
-    "./CCMask": void 0,
-    "./CCMotionStreak": 61,
+    "./CCAnimation": 55,
+    "./CCAudioSource": 56,
+    "./CCBlockInputEvents": 57,
+    "./CCButton": 58,
+    "./CCCanvas": 59,
+    "./CCComponent": 60,
+    "./CCComponentEventHandler": 61,
+    "./CCLabel": 62,
+    "./CCLabelOutline": 63,
+    "./CCLayout": 64,
+    "./CCMask": 65,
+    "./CCMotionStreak": 66,
     "./CCPageView": void 0,
     "./CCPageViewIndicator": void 0,
-    "./CCProgressBar": 62,
+    "./CCProgressBar": 67,
     "./CCRichText": void 0,
-    "./CCScrollBar": 64,
-    "./CCScrollView": 65,
+    "./CCScrollBar": 69,
+    "./CCScrollView": 70,
     "./CCSlider": void 0,
-    "./CCSprite": 66,
+    "./CCSprite": 71,
     "./CCToggle": void 0,
     "./CCToggleContainer": void 0,
     "./CCToggleGroup": void 0,
-    "./CCWidget": 68,
-    "./WXSubContextView": 69,
+    "./CCWidget": 73,
+    "./WXSubContextView": 74,
     "./editbox/CCEditBox": void 0,
-    "./missing-script": 71
+    "./missing-script": 76
   } ],
-  71: [ (function(require, module, exports) {
+  76: [ (function(require, module, exports) {
     var js = cc.js;
     var BUILTIN_CLASSID_RE = require("../utils/misc").BUILTIN_CLASSID_RE;
     var MissingClass = cc.Class({
@@ -14465,9 +16202,9 @@
     });
     cc._MissingScript = module.exports = MissingScript;
   }), {
-    "../utils/misc": 183
+    "../utils/misc": 198
   } ],
-  72: [ (function(require, module, exports) {
+  77: [ (function(require, module, exports) {
     var js = cc.js;
     require("../event/event");
     var EventMouse = function(eventType, bubbles) {
@@ -14620,9 +16357,9 @@
     cc.Event.EventKeyboard = EventKeyboard;
     module.exports = cc.Event;
   }), {
-    "../event/event": 79
+    "../event/event": 84
   } ],
-  73: [ (function(require, module, exports) {
+  78: [ (function(require, module, exports) {
     var js = require("../platform/js");
     cc.EventListener = function(type, listenerID, callback) {
       this._onEvent = callback;
@@ -14878,9 +16615,9 @@
     };
     module.exports = cc.EventListener;
   }), {
-    "../platform/js": 126
+    "../platform/js": 134
   } ],
-  74: [ (function(require, module, exports) {
+  79: [ (function(require, module, exports) {
     var js = require("../platform/js");
     require("./CCEventListener");
     var ListenerID = cc.EventListener.ListenerID;
@@ -15505,10 +17242,10 @@
     }));
     module.exports = eventManager;
   }), {
-    "../platform/js": 126,
-    "./CCEventListener": 73
+    "../platform/js": 134,
+    "./CCEventListener": 78
   } ],
-  75: [ (function(require, module, exports) {
+  80: [ (function(require, module, exports) {
     cc.Touch = function(x, y, id) {
       this._lastModified = 0;
       this.setTouchInfo(id, x, y);
@@ -15569,7 +17306,7 @@
       }
     };
   }), {} ],
-  76: [ (function(require, module, exports) {
+  81: [ (function(require, module, exports) {
     require("./CCEvent");
     require("./CCTouch");
     require("./CCEventListener");
@@ -15577,12 +17314,12 @@
     module.exports = eventManager;
     false;
   }), {
-    "./CCEvent": 72,
-    "./CCEventListener": 73,
-    "./CCEventManager": 74,
-    "./CCTouch": 75
+    "./CCEvent": 77,
+    "./CCEventListener": 78,
+    "./CCEventManager": 79,
+    "./CCTouch": 80
   } ],
-  77: [ (function(require, module, exports) {
+  82: [ (function(require, module, exports) {
     var js = cc.js;
     var CallbacksHandler = require("../platform/callbacks-invoker").CallbacksHandler;
     function EventListeners() {
@@ -15614,9 +17351,9 @@
     module.exports = EventListeners;
     false;
   }), {
-    "../platform/callbacks-invoker": 119
+    "../platform/callbacks-invoker": 127
   } ],
-  78: [ (function(require, module, exports) {
+  83: [ (function(require, module, exports) {
     var js = require("../platform/js");
     var CallbacksInvoker = require("../platform/callbacks-invoker");
     var fastRemove = js.array.fastRemove;
@@ -15663,10 +17400,10 @@
     };
     cc.EventTarget = module.exports = EventTarget;
   }), {
-    "../platform/callbacks-invoker": 119,
-    "../platform/js": 126
+    "../platform/callbacks-invoker": 127,
+    "../platform/js": 134
   } ],
-  79: [ (function(require, module, exports) {
+  84: [ (function(require, module, exports) {
     var js = require("../platform/js");
     cc.Event = function(type, bubbles) {
       this.type = type;
@@ -15742,20 +17479,20 @@
     cc.Event.EventCustom = EventCustom;
     module.exports = cc.Event;
   }), {
-    "../platform/js": 126
+    "../platform/js": 134
   } ],
-  80: [ (function(require, module, exports) {
+  85: [ (function(require, module, exports) {
     require("./event");
     require("./event-listeners");
     require("./event-target");
     require("./system-event");
   }), {
-    "./event": 79,
-    "./event-listeners": 77,
-    "./event-target": 78,
-    "./system-event": 81
+    "./event": 84,
+    "./event-listeners": 82,
+    "./event-target": 83,
+    "./system-event": 86
   } ],
-  81: [ (function(require, module, exports) {
+  86: [ (function(require, module, exports) {
     var EventTarget = require("../event/event-target");
     var eventManager = require("../event-manager");
     var inputManger = require("../platform/CCInputManager");
@@ -15819,17 +17556,299 @@
     true;
     cc.systemEvent = new cc.SystemEvent();
   }), {
-    "../event-manager": 76,
-    "../event/event-target": 78,
-    "../platform/CCInputManager": 110
+    "../event-manager": 81,
+    "../event/event-target": 83,
+    "../platform/CCInputManager": 118
   } ],
-  82: [ (function(require, module, exports) {
+  87: [ (function(require, module, exports) {
+    var RenderComponent = require("../components/CCRenderComponent");
+    var SpriteMaterial = require("../renderer/render-engine").SpriteMaterial;
+    var Types = require("./types");
+    var LineCap = Types.LineCap;
+    var LineJoin = Types.LineJoin;
+    var Graphics = cc.Class({
+      name: "cc.Graphics",
+      extends: RenderComponent,
+      editor: false,
+      ctor: function() {
+        this._impl = Graphics._assembler.createImpl(this);
+      },
+      properties: {
+        _lineWidth: 1,
+        _strokeColor: cc.Color.BLACK,
+        _lineJoin: LineJoin.MITER,
+        _lineCap: LineCap.BUTT,
+        _fillColor: cc.Color.WHITE,
+        _miterLimit: 10,
+        lineWidth: {
+          get: function() {
+            return this._lineWidth;
+          },
+          set: function(value) {
+            this._lineWidth = value;
+            this._impl.lineWidth = value;
+          }
+        },
+        lineJoin: {
+          get: function() {
+            return this._lineJoin;
+          },
+          set: function(value) {
+            this._lineJoin = value;
+            this._impl.lineJoin = value;
+          },
+          type: LineJoin
+        },
+        lineCap: {
+          get: function() {
+            return this._lineCap;
+          },
+          set: function(value) {
+            this._lineCap = value;
+            this._impl.lineCap = value;
+          },
+          type: LineCap
+        },
+        strokeColor: {
+          get: function() {
+            return this._strokeColor;
+          },
+          set: function(value) {
+            this._impl.strokeColor = this._strokeColor = cc.color(value);
+          }
+        },
+        fillColor: {
+          get: function() {
+            return this._fillColor;
+          },
+          set: function(value) {
+            this._impl.fillColor = this._fillColor = cc.color(value);
+          }
+        },
+        miterLimit: {
+          get: function() {
+            return this._miterLimit;
+          },
+          set: function(value) {
+            this._miterLimit = value;
+            this._impl.miterLimit = value;
+          }
+        }
+      },
+      statics: {
+        LineJoin: LineJoin,
+        LineCap: LineCap
+      },
+      onRestore: function() {
+        this._impl || (this._impl = Graphics._assembler.createImpl());
+      },
+      onEnable: function() {
+        this._super();
+        this._activateMaterial();
+      },
+      onDestroy: function() {
+        this._super();
+        this._impl.clear(this, true);
+        this._impl = null;
+      },
+      _activateMaterial: function() {
+        if (cc.game.renderType === cc.game.RENDER_TYPE_CANVAS) return;
+        this.node._renderFlag &= ~cc.RenderFlow.FLAG_RENDER;
+        this.node._renderFlag |= cc.RenderFlow.FLAG_CUSTOM_IA_RENDER;
+        if (this._material) return;
+        var material = new SpriteMaterial();
+        material.useColor = false;
+        material.useTexture = false;
+        material.useModel = true;
+        this._updateMaterial(material);
+      },
+      moveTo: function(x, y) {
+        if (true, x instanceof cc.Vec2) {
+          cc.warn("[moveTo] : Can not pass Vec2 as [x, y] value, please check it.");
+          return;
+        }
+        this._impl.moveTo(x, y);
+      },
+      lineTo: function(x, y) {
+        if (true, x instanceof cc.Vec2) {
+          cc.warn("[moveTo] : Can not pass Vec2 as [x, y] value, please check it.");
+          return;
+        }
+        this._impl.lineTo(x, y);
+      },
+      bezierCurveTo: function(c1x, c1y, c2x, c2y, x, y) {
+        this._impl.bezierCurveTo(c1x, c1y, c2x, c2y, x, y);
+      },
+      quadraticCurveTo: function(cx, cy, x, y) {
+        this._impl.quadraticCurveTo(cx, cy, x, y);
+      },
+      arc: function(cx, cy, r, startAngle, endAngle, counterclockwise) {
+        this._impl.arc(cx, cy, r, startAngle, endAngle, counterclockwise);
+      },
+      ellipse: function(cx, cy, rx, ry) {
+        this._impl.ellipse(cx, cy, rx, ry);
+      },
+      circle: function(cx, cy, r) {
+        this._impl.circle(cx, cy, r);
+      },
+      rect: function(x, y, w, h) {
+        this._impl.rect(x, y, w, h);
+      },
+      roundRect: function(x, y, w, h, r) {
+        this._impl.roundRect(x, y, w, h, r);
+      },
+      fillRect: function(x, y, w, h) {
+        this.rect(x, y, w, h);
+        this.fill();
+      },
+      clear: function(clean) {
+        this._impl.clear(this, clean);
+      },
+      close: function() {
+        this._impl.close();
+      },
+      stroke: function() {
+        Graphics._assembler.stroke(this);
+      },
+      fill: function() {
+        Graphics._assembler.fill(this);
+      }
+    });
+    cc.Graphics = module.exports = Graphics;
+  }), {
+    "../components/CCRenderComponent": 68,
+    "../renderer/render-engine": 156,
+    "./types": 90
+  } ],
+  88: [ (function(require, module, exports) {
+    var PointFlags = require("./types").PointFlags;
+    var PI = Math.PI;
+    var min = Math.min;
+    var max = Math.max;
+    var cos = Math.cos;
+    var sin = Math.sin;
+    var abs = Math.abs;
+    var sign = Math.sign;
+    var KAPPA90 = .5522847493;
+    function arc(ctx, cx, cy, r, startAngle, endAngle, counterclockwise) {
+      counterclockwise = counterclockwise || false;
+      var a = 0, da = 0, hda = 0, kappa = 0;
+      var dx = 0, dy = 0, x = 0, y = 0, tanx = 0, tany = 0;
+      var px = 0, py = 0, ptanx = 0, ptany = 0;
+      var i, ndivs;
+      da = endAngle - startAngle;
+      if (counterclockwise) if (abs(da) >= 2 * PI) da = 2 * PI; else while (da < 0) da += 2 * PI; else if (abs(da) >= 2 * PI) da = 2 * -PI; else while (da > 0) da -= 2 * PI;
+      ndivs = 0 | max(1, min(abs(da) / (.5 * PI) + .5, 5));
+      hda = da / ndivs / 2;
+      kappa = abs(4 / 3 * (1 - cos(hda)) / sin(hda));
+      counterclockwise || (kappa = -kappa);
+      for (i = 0; i <= ndivs; i++) {
+        a = startAngle + da * (i / ndivs);
+        dx = cos(a);
+        dy = sin(a);
+        x = cx + dx * r;
+        y = cy + dy * r;
+        tanx = -dy * r * kappa;
+        tany = dx * r * kappa;
+        0 === i ? ctx.moveTo(x, y) : ctx.bezierCurveTo(px + ptanx, py + ptany, x - tanx, y - tany, x, y);
+        px = x;
+        py = y;
+        ptanx = tanx;
+        ptany = tany;
+      }
+    }
+    function ellipse(ctx, cx, cy, rx, ry) {
+      ctx.moveTo(cx - rx, cy);
+      ctx.bezierCurveTo(cx - rx, cy + ry * KAPPA90, cx - rx * KAPPA90, cy + ry, cx, cy + ry);
+      ctx.bezierCurveTo(cx + rx * KAPPA90, cy + ry, cx + rx, cy + ry * KAPPA90, cx + rx, cy);
+      ctx.bezierCurveTo(cx + rx, cy - ry * KAPPA90, cx + rx * KAPPA90, cy - ry, cx, cy - ry);
+      ctx.bezierCurveTo(cx - rx * KAPPA90, cy - ry, cx - rx, cy - ry * KAPPA90, cx - rx, cy);
+      ctx.close();
+    }
+    function roundRect(ctx, x, y, w, h, r) {
+      if (r < .1) {
+        ctx.rect(x, y, w, h);
+        return;
+      }
+      var rx = min(r, .5 * abs(w)) * sign(w), ry = min(r, .5 * abs(h)) * sign(h);
+      ctx.moveTo(x, y + ry);
+      ctx.lineTo(x, y + h - ry);
+      ctx.bezierCurveTo(x, y + h - ry * (1 - KAPPA90), x + rx * (1 - KAPPA90), y + h, x + rx, y + h);
+      ctx.lineTo(x + w - rx, y + h);
+      ctx.bezierCurveTo(x + w - rx * (1 - KAPPA90), y + h, x + w, y + h - ry * (1 - KAPPA90), x + w, y + h - ry);
+      ctx.lineTo(x + w, y + ry);
+      ctx.bezierCurveTo(x + w, y + ry * (1 - KAPPA90), x + w - rx * (1 - KAPPA90), y, x + w - rx, y);
+      ctx.lineTo(x + rx, y);
+      ctx.bezierCurveTo(x + rx * (1 - KAPPA90), y, x, y + ry * (1 - KAPPA90), x, y + ry);
+      ctx.close();
+    }
+    function tesselateBezier(ctx, x1, y1, x2, y2, x3, y3, x4, y4, level, type) {
+      var x12, y12, x23, y23, x34, y34, x123, y123, x234, y234, x1234, y1234;
+      var dx, dy, d2, d3;
+      if (level > 10) return;
+      x12 = .5 * (x1 + x2);
+      y12 = .5 * (y1 + y2);
+      x23 = .5 * (x2 + x3);
+      y23 = .5 * (y2 + y3);
+      x34 = .5 * (x3 + x4);
+      y34 = .5 * (y3 + y4);
+      x123 = .5 * (x12 + x23);
+      y123 = .5 * (y12 + y23);
+      dx = x4 - x1;
+      dy = y4 - y1;
+      d2 = abs((x2 - x4) * dy - (y2 - y4) * dx);
+      d3 = abs((x3 - x4) * dy - (y3 - y4) * dx);
+      if ((d2 + d3) * (d2 + d3) < ctx._tessTol * (dx * dx + dy * dy)) {
+        ctx._addPoint(x4, y4, 0 === type ? type | PointFlags.PT_BEVEL : type);
+        return;
+      }
+      x234 = .5 * (x23 + x34);
+      y234 = .5 * (y23 + y34);
+      x1234 = .5 * (x123 + x234);
+      y1234 = .5 * (y123 + y234);
+      tesselateBezier(ctx, x1, y1, x12, y12, x123, y123, x1234, y1234, level + 1, 0);
+      tesselateBezier(ctx, x1234, y1234, x234, y234, x34, y34, x4, y4, level + 1, type);
+    }
+    module.exports = {
+      arc: arc,
+      ellipse: ellipse,
+      roundRect: roundRect,
+      tesselateBezier: tesselateBezier
+    };
+  }), {
+    "./types": 90
+  } ],
+  89: [ (function(require, module, exports) {
     "use strict";
     require("./graphics");
   }), {
-    "./graphics": void 0
+    "./graphics": 87
   } ],
-  83: [ (function(require, module, exports) {
+  90: [ (function(require, module, exports) {
+    "use strict";
+    var LineCap = cc.Enum({
+      BUTT: 0,
+      ROUND: 1,
+      SQUARE: 2
+    });
+    var LineJoin = cc.Enum({
+      BEVEL: 0,
+      ROUND: 1,
+      MITER: 2
+    });
+    var PointFlags = cc.Enum({
+      PT_CORNER: 1,
+      PT_LEFT: 2,
+      PT_BEVEL: 4,
+      PT_INNERBEVEL: 8
+    });
+    module.exports = {
+      LineCap: LineCap,
+      LineJoin: LineJoin,
+      PointFlags: PointFlags
+    };
+  }), {} ],
+  91: [ (function(require, module, exports) {
     require("./platform");
     require("./assets");
     true;
@@ -15848,22 +17867,22 @@
     require("./base-ui/CCWidgetManager");
   }), {
     "./3d": void 0,
-    "./3d/polyfill-3d": 22,
-    "./CCNode": 26,
-    "./CCPrivateNode": 27,
-    "./CCScene": 28,
-    "./assets": 47,
-    "./base-ui/CCWidgetManager": 48,
-    "./camera/CCCamera": 49,
+    "./3d/polyfill-3d": 26,
+    "./CCNode": 30,
+    "./CCPrivateNode": 31,
+    "./CCScene": 32,
+    "./assets": 51,
+    "./base-ui/CCWidgetManager": 52,
+    "./camera/CCCamera": 53,
     "./collider": void 0,
     "./collider/CCIntersection": void 0,
-    "./components": 70,
-    "./graphics": 82,
+    "./components": 75,
+    "./graphics": 89,
     "./mesh": void 0,
     "./physics": void 0,
-    "./platform": 123
+    "./platform": 131
   } ],
-  84: [ (function(require, module, exports) {
+  92: [ (function(require, module, exports) {
     var js = require("../platform/js");
     var Pipeline = require("./pipeline");
     var LoadingItems = require("./loading-items");
@@ -16228,18 +18247,18 @@
     false;
     module.exports = cc.loader;
   }), {
-    "../platform/js": 126,
-    "../platform/utils": 130,
-    "./asset-loader": 85,
-    "./asset-table": 86,
-    "./auto-release-utils": 88,
-    "./downloader": 90,
-    "./loader": 93,
-    "./loading-items": 94,
-    "./pipeline": 97,
-    "./released-asset-checker": 98
+    "../platform/js": 134,
+    "../platform/utils": 138,
+    "./asset-loader": 93,
+    "./asset-table": 94,
+    "./auto-release-utils": 96,
+    "./downloader": 98,
+    "./loader": 101,
+    "./loading-items": 102,
+    "./pipeline": 105,
+    "./released-asset-checker": 106
   } ],
-  85: [ (function(require, module, exports) {
+  93: [ (function(require, module, exports) {
     require("../utils/CCPath");
     var debug = require("../CCDebug");
     var Pipeline = require("./pipeline");
@@ -16290,12 +18309,12 @@
     };
     Pipeline.AssetLoader = module.exports = AssetLoader;
   }), {
-    "../CCDebug": 23,
-    "../utils/CCPath": 175,
-    "./loading-items": 94,
-    "./pipeline": 97
+    "../CCDebug": 27,
+    "../utils/CCPath": 190,
+    "./loading-items": 102,
+    "./pipeline": 105
   } ],
-  86: [ (function(require, module, exports) {
+  94: [ (function(require, module, exports) {
     var pushToMap = require("../utils/misc").pushToMap;
     var js = require("../platform/js");
     function Entry(uuid, type) {
@@ -16389,10 +18408,10 @@
     };
     module.exports = AssetTable;
   }), {
-    "../platform/js": 126,
-    "../utils/misc": 183
+    "../platform/js": 134,
+    "../utils/misc": 198
   } ],
-  87: [ (function(require, module, exports) {
+  95: [ (function(require, module, exports) {
     var sys = require("../platform/CCSys");
     var debug = require("../CCDebug");
     var __audioSupport = sys.__audioSupport;
@@ -16453,10 +18472,10 @@
     }
     module.exports = downloadAudio;
   }), {
-    "../CCDebug": 23,
-    "../platform/CCSys": 115
+    "../CCDebug": 27,
+    "../platform/CCSys": 123
   } ],
-  88: [ (function(require, module, exports) {
+  96: [ (function(require, module, exports) {
     var js = require("../platform/js");
     function parseDepends(key, parsed) {
       var item = cc.loader.getItem(key);
@@ -16522,9 +18541,9 @@
       }
     };
   }), {
-    "../platform/js": 126
+    "../platform/js": 134
   } ],
-  89: [ (function(require, module, exports) {
+  97: [ (function(require, module, exports) {
     function downloadBinary(item, callback) {
       var url = item.url;
       var xhr = cc.loader.getXMLHttpRequest(), errInfo = "Load binary data failed: " + url;
@@ -16556,7 +18575,7 @@
     }
     module.exports = downloadBinary;
   }), {} ],
-  90: [ (function(require, module, exports) {
+  98: [ (function(require, module, exports) {
     var js = require("../platform/js");
     var debug = require("../CCDebug");
     require("../utils/CCPath");
@@ -16721,17 +18740,17 @@
     };
     Pipeline.Downloader = module.exports = Downloader;
   }), {
-    "../CCDebug": 23,
-    "../platform/js": 126,
-    "../utils/CCPath": 175,
-    "./audio-downloader": 87,
-    "./binary-downloader": 89,
-    "./pack-downloader": 96,
-    "./pipeline": 97,
-    "./text-downloader": 99,
-    "./utils": 101
+    "../CCDebug": 27,
+    "../platform/js": 134,
+    "../utils/CCPath": 190,
+    "./audio-downloader": 95,
+    "./binary-downloader": 97,
+    "./pack-downloader": 104,
+    "./pipeline": 105,
+    "./text-downloader": 107,
+    "./utils": 109
   } ],
-  91: [ (function(require, module, exports) {
+  99: [ (function(require, module, exports) {
     var textUtils = require("../utils/text-utils");
     var _canvasContext = null;
     var _testString = "BES bswy:->@";
@@ -16815,22 +18834,22 @@
     };
     module.exports = fontLoader;
   }), {
-    "../utils/text-utils": 189
+    "../utils/text-utils": 204
   } ],
-  92: [ (function(require, module, exports) {
+  100: [ (function(require, module, exports) {
     require("./downloader");
     require("./loader");
     require("./loading-items");
     require("./pipeline");
     require("./CCLoader");
   }), {
-    "./CCLoader": 84,
-    "./downloader": 90,
-    "./loader": 93,
-    "./loading-items": 94,
-    "./pipeline": 97
+    "./CCLoader": 92,
+    "./downloader": 98,
+    "./loader": 101,
+    "./loading-items": 102,
+    "./pipeline": 105
   } ],
-  93: [ (function(require, module, exports) {
+  101: [ (function(require, module, exports) {
     var js = require("../platform/js");
     var plistParser = require("../platform/CCSAXParser").plistParser;
     var Pipeline = require("./pipeline");
@@ -16951,14 +18970,14 @@
     };
     Pipeline.Loader = module.exports = Loader;
   }), {
-    "../assets/CCTexture2D": 46,
-    "../platform/CCSAXParser": 113,
-    "../platform/js": 126,
-    "./font-loader": 91,
-    "./pipeline": 97,
-    "./uuid-loader": 102
+    "../assets/CCTexture2D": 50,
+    "../platform/CCSAXParser": 121,
+    "../platform/js": 134,
+    "./font-loader": 99,
+    "./pipeline": 105,
+    "./uuid-loader": 110
   } ],
-  94: [ (function(require, module, exports) {
+  102: [ (function(require, module, exports) {
     var CallbacksInvoker = require("../platform/callbacks-invoker");
     require("../utils/CCPath");
     var js = require("../platform/js");
@@ -17243,11 +19262,11 @@
     };
     cc.LoadingItems = module.exports = LoadingItems;
   }), {
-    "../platform/callbacks-invoker": 119,
-    "../platform/js": 126,
-    "../utils/CCPath": 175
+    "../platform/callbacks-invoker": 127,
+    "../platform/js": 134,
+    "../utils/CCPath": 190
   } ],
-  95: [ (function(require, module, exports) {
+  103: [ (function(require, module, exports) {
     var Pipeline = require("./pipeline");
     var ID = "MD5Pipe";
     var ExtnameRegex = /(\.[^.\n\\/]*)$/;
@@ -17303,9 +19322,9 @@
     };
     Pipeline.MD5Pipe = module.exports = MD5Pipe;
   }), {
-    "./pipeline": 97
+    "./pipeline": 105
   } ],
-  96: [ (function(require, module, exports) {
+  104: [ (function(require, module, exports) {
     var Unpackers = require("./unpackers");
     var pushToMap = require("../utils/misc").pushToMap;
     var PackState = {
@@ -17412,10 +19431,10 @@
     };
     false;
   }), {
-    "../utils/misc": 183,
-    "./unpackers": 100
+    "../utils/misc": 198,
+    "./unpackers": 108
   } ],
-  97: [ (function(require, module, exports) {
+  105: [ (function(require, module, exports) {
     var js = require("../platform/js");
     var LoadingItems = require("./loading-items");
     var ItemState = LoadingItems.ItemState;
@@ -17546,10 +19565,10 @@
     };
     cc.Pipeline = module.exports = Pipeline;
   }), {
-    "../platform/js": 126,
-    "./loading-items": 94
+    "../platform/js": 134,
+    "./loading-items": 102
   } ],
-  98: [ (function(require, module, exports) {
+  106: [ (function(require, module, exports) {
     true;
     var js;
     var tmpInfo;
@@ -17603,9 +19622,9 @@
       module.exports = ReleasedAssetChecker;
     })();
   }), {
-    "../platform/js": 126
+    "../platform/js": 134
   } ],
-  99: [ (function(require, module, exports) {
+  107: [ (function(require, module, exports) {
     var urlAppendTimestamp = require("./utils").urlAppendTimestamp;
     module.exports = function(item, callback) {
       var url = item.url;
@@ -17637,9 +19656,9 @@
       xhr.send(null);
     };
   }), {
-    "./utils": 101
+    "./utils": 109
   } ],
-  100: [ (function(require, module, exports) {
+  108: [ (function(require, module, exports) {
     var Texture2D = require("../assets/CCTexture2D");
     var js = require("../platform/js");
     function JsonUnpacker() {
@@ -17678,10 +19697,10 @@
       TextureUnpacker: TextureUnpacker
     };
   }), {
-    "../assets/CCTexture2D": 46,
-    "../platform/js": 126
+    "../assets/CCTexture2D": 50,
+    "../platform/js": 134
   } ],
-  101: [ (function(require, module, exports) {
+  109: [ (function(require, module, exports) {
     var _noCacheRex = /\?/;
     module.exports = {
       urlAppendTimestamp: function(url) {
@@ -17690,7 +19709,7 @@
       }
     };
   }), {} ],
-  102: [ (function(require, module, exports) {
+  110: [ (function(require, module, exports) {
     var js = require("../platform/js");
     var debug = require("../CCDebug");
     require("../platform/deserialize");
@@ -17840,12 +19859,12 @@
     module.exports = loadUuid;
     loadUuid.isSceneObj = isSceneObj;
   }), {
-    "../CCDebug": 23,
-    "../platform/deserialize": 121,
-    "../platform/js": 126,
-    "./loading-items": 94
+    "../CCDebug": 27,
+    "../platform/deserialize": 129,
+    "../platform/js": 134,
+    "./loading-items": 102
   } ],
-  103: [ (function(require, module, exports) {
+  111: [ (function(require, module, exports) {
     var CompScheduler = require("./component-scheduler");
     var Flags = require("./platform/CCObject").Flags;
     var js = require("./platform/js");
@@ -18015,12 +20034,12 @@
     });
     module.exports = NodeActivator;
   }), {
-    "./component-scheduler": 50,
-    "./platform/CCObject": 112,
-    "./platform/js": 126,
-    "./utils/misc": 183
+    "./component-scheduler": 54,
+    "./platform/CCObject": 120,
+    "./platform/js": 134,
+    "./utils/misc": 198
   } ],
-  104: [ (function(require, module, exports) {
+  112: [ (function(require, module, exports) {
     var js;
     var macro;
     var sys;
@@ -18029,12 +20048,12 @@
     var bkInputManager;
     false;
   }), {
-    "../event-manager": 76,
-    "../platform/js": 126,
-    "./CCMacro": 111,
-    "./CCSys": 115
+    "../event-manager": 81,
+    "../platform/js": 134,
+    "./CCMacro": 119,
+    "./CCSys": 123
   } ],
-  105: [ (function(require, module, exports) {
+  113: [ (function(require, module, exports) {
     var Asset = require("../assets/CCAsset");
     var callInNextTick = require("./utils").callInNextTick;
     var Loader = require("../load-pipeline/CCLoader");
@@ -18198,16 +20217,16 @@
     AssetLibrary._uuidToAsset = {};
     module.exports = cc.AssetLibrary = AssetLibrary;
   }), {
-    "../assets/CCAsset": 30,
-    "../load-pipeline/CCLoader": 84,
-    "../load-pipeline/auto-release-utils": 88,
-    "../load-pipeline/md5-pipe": 95,
-    "../load-pipeline/pack-downloader": 96,
-    "../utils/decode-uuid": 179,
-    "./js": 126,
-    "./utils": 130
+    "../assets/CCAsset": 34,
+    "../load-pipeline/CCLoader": 92,
+    "../load-pipeline/auto-release-utils": 96,
+    "../load-pipeline/md5-pipe": 103,
+    "../load-pipeline/pack-downloader": 104,
+    "../utils/decode-uuid": 194,
+    "./js": 134,
+    "./utils": 138
   } ],
-  106: [ (function(require, module, exports) {
+  114: [ (function(require, module, exports) {
     var js = require("./js");
     var Enum = require("./CCEnum");
     var utils = require("./utils");
@@ -18715,14 +20734,14 @@
     };
     false;
   }), {
-    "./CCEnum": 108,
-    "./attribute": 118,
-    "./js": 126,
-    "./preprocess-class": 127,
-    "./requiring-frame": 128,
-    "./utils": 130
+    "./CCEnum": 116,
+    "./attribute": 126,
+    "./js": 134,
+    "./preprocess-class": 135,
+    "./requiring-frame": 136,
+    "./utils": 138
   } ],
-  107: [ (function(require, module, exports) {
+  115: [ (function(require, module, exports) {
     require("./CCClass");
     var Preprocess = require("./preprocess-class");
     var js = require("./js");
@@ -18899,12 +20918,12 @@
       mixins: mixins
     };
   }), {
-    "./CCClass": 106,
-    "./js": 126,
-    "./preprocess-class": 127,
-    "./utils": 130
+    "./CCClass": 114,
+    "./js": 134,
+    "./preprocess-class": 135,
+    "./utils": 138
   } ],
-  108: [ (function(require, module, exports) {
+  116: [ (function(require, module, exports) {
     var js = require("./js");
     function Enum(obj) {
       if ("__enums__" in obj) return obj;
@@ -18951,9 +20970,9 @@
     false;
     module.exports = cc.Enum = Enum;
   }), {
-    "./js": 126
+    "./js": 134
   } ],
-  109: [ (function(require, module, exports) {
+  117: [ (function(require, module, exports) {
     var eventManager = require("../event-manager");
     var inputManager = require("./CCInputManager");
     var PORTRAIT = 0;
@@ -19059,10 +21078,10 @@
       }
     };
   }), {
-    "../event-manager": 76,
-    "./CCInputManager": 110
+    "../event-manager": 81,
+    "./CCInputManager": 118
   } ],
-  110: [ (function(require, module, exports) {
+  118: [ (function(require, module, exports) {
     var macro = require("./CCMacro");
     var sys = require("./CCSys");
     var eventManager = require("../event-manager");
@@ -19449,11 +21468,11 @@
     };
     module.exports = _cc.inputManager = inputManager;
   }), {
-    "../event-manager": 76,
-    "./CCMacro": 111,
-    "./CCSys": 115
+    "../event-manager": 81,
+    "./CCMacro": 119,
+    "./CCSys": 123
   } ],
-  111: [ (function(require, module, exports) {
+  119: [ (function(require, module, exports) {
     var js = require("./js");
     cc.macro = {
       RAD: Math.PI / 180,
@@ -19648,9 +21667,9 @@
     });
     module.exports = cc.macro;
   }), {
-    "./js": 126
+    "./js": 134
   } ],
-  112: [ (function(require, module, exports) {
+  120: [ (function(require, module, exports) {
     var js = require("./js");
     var CCClass = require("./CCClass");
     var Destroyed = 1;
@@ -19819,10 +21838,10 @@
     false, false;
     cc.Object = module.exports = CCObject;
   }), {
-    "./CCClass": 106,
-    "./js": 126
+    "./CCClass": 114,
+    "./js": 134
   } ],
-  113: [ (function(require, module, exports) {
+  121: [ (function(require, module, exports) {
     var js = require("../platform/js");
     cc.SAXParser = function() {
       if (true, window.DOMParser) {
@@ -19903,9 +21922,9 @@
       plistParser: cc.plistParser
     };
   }), {
-    "../platform/js": 126
+    "../platform/js": 134
   } ],
-  114: [ (function(require, module, exports) {
+  122: [ (function(require, module, exports) {
     cc.screen = {
       _supportsFullScreen: false,
       _preOnFullScreenChange: null,
@@ -19970,7 +21989,7 @@
     };
     cc.screen.init();
   }), {} ],
-  115: [ (function(require, module, exports) {
+  123: [ (function(require, module, exports) {
     function initSys() {
       cc.sys = {};
       var sys = cc.sys;
@@ -20272,7 +22291,7 @@
     var sys = cc && cc.sys ? cc.sys : initSys();
     module.exports = sys;
   }), {} ],
-  116: [ (function(require, module, exports) {
+  124: [ (function(require, module, exports) {
     var EventTarget = require("../event/event-target");
     var js = require("../platform/js");
     var renderer = require("../renderer");
@@ -20919,12 +22938,12 @@
     cc.winSize = cc.v2();
     module.exports = cc.view;
   }), {
-    "../event/event-target": 78,
-    "../platform/CCClass": 106,
-    "../platform/js": 126,
-    "../renderer": 144
+    "../event/event-target": 83,
+    "../platform/CCClass": 114,
+    "../platform/js": 134,
+    "../renderer": 155
   } ],
-  117: [ (function(require, module, exports) {
+  125: [ (function(require, module, exports) {
     cc.visibleRect = {
       topLeft: cc.v2(0, 0),
       topRight: cc.v2(0, 0),
@@ -20962,7 +22981,7 @@
       }
     };
   }), {} ],
-  118: [ (function(require, module, exports) {
+  126: [ (function(require, module, exports) {
     var js = require("./js");
     var isPlainEmptyObj = require("./utils").isPlainEmptyObj_DEV;
     var DELIMETER = "$_$";
@@ -21050,11 +23069,11 @@
       ScriptUuid: {}
     };
   }), {
-    "./CCClass": 106,
-    "./js": 126,
-    "./utils": 130
+    "./CCClass": 114,
+    "./js": 134,
+    "./utils": 138
   } ],
-  119: [ (function(require, module, exports) {
+  127: [ (function(require, module, exports) {
     var js = require("./js");
     var fastRemoveAt = js.array.fastRemoveAt;
     function CallbackList() {
@@ -21181,9 +23200,9 @@
     CallbacksInvoker.CallbacksHandler = CallbacksHandler;
     module.exports = CallbacksInvoker;
   }), {
-    "./js": 126
+    "./js": 134
   } ],
-  120: [ (function(require, module, exports) {
+  128: [ (function(require, module, exports) {
     function deepFlatten(strList, array) {
       for (var i = 0; i < array.length; i++) {
         var item = array[i];
@@ -21200,7 +23219,7 @@
       flattenCodeArray: flattenCodeArray
     };
   }), {} ],
-  121: [ (function(require, module, exports) {
+  129: [ (function(require, module, exports) {
     var js = require("./js");
     var Attr = require("./attribute");
     var CCClass = require("./CCClass");
@@ -21514,12 +23533,12 @@
       cc.warnID(5302, id);
     };
   }), {
-    "../utils/misc": 183,
-    "./CCClass": 106,
-    "./attribute": 118,
-    "./js": 126
+    "../utils/misc": 198,
+    "./CCClass": 114,
+    "./attribute": 126,
+    "./js": 134
   } ],
-  122: [ (function(require, module, exports) {
+  130: [ (function(require, module, exports) {
     var NonUuidMark = ".";
     function IdGenerater(category) {
       this.id = 0 | 998 * Math.random();
@@ -21531,7 +23550,7 @@
     IdGenerater.global = new IdGenerater("global");
     module.exports = IdGenerater;
   }), {} ],
-  123: [ (function(require, module, exports) {
+  131: [ (function(require, module, exports) {
     require("./js");
     require("./CCClass");
     require("./CCClassDecorator");
@@ -21549,23 +23568,23 @@
     require("./CCAssetLibrary");
     require("./CCVisibleRect");
   }), {
-    "./CCAssetLibrary": 105,
-    "./CCClass": 106,
-    "./CCClassDecorator": 107,
-    "./CCEnum": 108,
-    "./CCMacro": 111,
-    "./CCObject": 112,
-    "./CCSys": 115,
-    "./CCVisibleRect": 117,
-    "./callbacks-invoker": 119,
-    "./deserialize": 121,
-    "./instantiate": 125,
-    "./instantiate-jit": 124,
-    "./js": 126,
-    "./requiring-frame": 128,
-    "./url": 129
+    "./CCAssetLibrary": 113,
+    "./CCClass": 114,
+    "./CCClassDecorator": 115,
+    "./CCEnum": 116,
+    "./CCMacro": 119,
+    "./CCObject": 120,
+    "./CCSys": 123,
+    "./CCVisibleRect": 125,
+    "./callbacks-invoker": 127,
+    "./deserialize": 129,
+    "./instantiate": 133,
+    "./instantiate-jit": 132,
+    "./js": 134,
+    "./requiring-frame": 136,
+    "./url": 137
   } ],
-  124: [ (function(require, module, exports) {
+  132: [ (function(require, module, exports) {
     var CCObject = require("./CCObject");
     var Destroyed = CCObject.Flags.Destroyed;
     var PersistentMask = CCObject.Flags.PersistentMask;
@@ -21835,13 +23854,13 @@
     };
     false;
   }), {
-    "./CCClass": 106,
-    "./CCObject": 112,
-    "./attribute": 118,
-    "./compiler": 120,
-    "./js": 126
+    "./CCClass": 114,
+    "./CCObject": 120,
+    "./attribute": 126,
+    "./compiler": 128,
+    "./js": 134
   } ],
-  125: [ (function(require, module, exports) {
+  133: [ (function(require, module, exports) {
     var CCObject = require("./CCObject");
     var CCValueType = require("../value-types/value-type");
     var Destroyed = CCObject.Flags.Destroyed;
@@ -21961,11 +23980,11 @@
     cc.instantiate = instantiate;
     module.exports = instantiate;
   }), {
-    "../value-types/value-type": 197,
-    "./CCObject": 112,
-    "./utils": 130
+    "../value-types/value-type": 212,
+    "./CCObject": 120,
+    "./utils": 138
   } ],
-  126: [ (function(require, module, exports) {
+  134: [ (function(require, module, exports) {
     var tempCIDGenerater = new (require("./id-generater"))("TmpCId.");
     function _getPropertyDescriptor(obj, name) {
       while (obj) {
@@ -22344,10 +24363,10 @@
     cc.js = js;
     module.exports = js;
   }), {
-    "../utils/mutable-forward-iterator": 184,
-    "./id-generater": 122
+    "../utils/mutable-forward-iterator": 199,
+    "./id-generater": 130
   } ],
-  127: [ (function(require, module, exports) {
+  135: [ (function(require, module, exports) {
     var js = require("./js");
     var SerializableAttrs = {
       url: {
@@ -22482,10 +24501,10 @@
       return true;
     };
   }), {
-    "./CCClass": 106,
-    "./js": 126
+    "./CCClass": 114,
+    "./js": 134
   } ],
-  128: [ (function(require, module, exports) {
+  136: [ (function(require, module, exports) {
     var requiringFrames = [];
     cc._RF = {
       push: function(module, uuid, script) {
@@ -22516,7 +24535,7 @@
     };
     false;
   }), {} ],
-  129: [ (function(require, module, exports) {
+  137: [ (function(require, module, exports) {
     cc.url = {
       _rawAssets: "",
       normalize: function(url) {
@@ -22538,7 +24557,7 @@
     };
     module.exports = cc.url;
   }), {} ],
-  130: [ (function(require, module, exports) {
+  138: [ (function(require, module, exports) {
     module.exports = {
       contains: function(refNode, otherNode) {
         if ("function" == typeof refNode.contains) return refNode.contains(otherNode);
@@ -22564,7 +24583,7 @@
     false;
     false;
   }), {} ],
-  131: [ (function(require, module, exports) {
+  139: [ (function(require, module, exports) {
     require("./platform/js");
     require("./value-types");
     require("./utils");
@@ -22582,23 +24601,23 @@
     require("./CCScheduler");
     require("./event-manager");
   }), {
-    "./CCDirector": 24,
-    "./CCScheduler": 29,
-    "./event": 80,
-    "./event-manager": 76,
-    "./load-pipeline": 92,
-    "./platform/CCInputExtension": 109,
-    "./platform/CCInputManager": 110,
-    "./platform/CCMacro": 111,
-    "./platform/CCScreen": 114,
-    "./platform/CCSys": 115,
-    "./platform/CCView": 116,
-    "./platform/js": 126,
-    "./renderer": 144,
-    "./utils": 181,
-    "./value-types": 192
+    "./CCDirector": 28,
+    "./CCScheduler": 33,
+    "./event": 85,
+    "./event-manager": 81,
+    "./load-pipeline": 100,
+    "./platform/CCInputExtension": 117,
+    "./platform/CCInputManager": 118,
+    "./platform/CCMacro": 119,
+    "./platform/CCScreen": 122,
+    "./platform/CCSys": 123,
+    "./platform/CCView": 124,
+    "./platform/js": 134,
+    "./renderer": 155,
+    "./utils": 196,
+    "./value-types": 207
   } ],
-  132: [ (function(require, module, exports) {
+  140: [ (function(require, module, exports) {
     var js = require("../../platform/js");
     var RenderFlow = require("../render-flow");
     require("./renderers");
@@ -22635,11 +24654,11 @@
     };
     module.exports = RenderComponentWalker;
   }), {
-    "../../platform/js": 126,
-    "../render-flow": 146,
-    "./renderers": 135
+    "../../platform/js": 134,
+    "../render-flow": 157,
+    "./renderers": 145
   } ],
-  133: [ (function(require, module, exports) {
+  141: [ (function(require, module, exports) {
     var ForwardRenderer = function() {};
     ForwardRenderer.prototype = {
       constructor: ForwardRenderer,
@@ -22648,18 +24667,160 @@
     };
     module.exports = ForwardRenderer;
   }), {} ],
-  134: [ (function(require, module, exports) {
+  142: [ (function(require, module, exports) {
     module.exports = {
       ForwardRenderer: require("./forward-renderer"),
       RenderComponentWalker: require("./canvas-render-walker"),
       _renderers: require("./renderers")
     };
   }), {
-    "./canvas-render-walker": 132,
-    "./forward-renderer": 133,
-    "./renderers": 135
+    "./canvas-render-walker": 140,
+    "./forward-renderer": 141,
+    "./renderers": 145
   } ],
-  135: [ (function(require, module, exports) {
+  143: [ (function(require, module, exports) {
+    var Helper = require("../../../../graphics/helper");
+    var Types = require("../../../../graphics/types");
+    var js = require("../../../../platform/js");
+    var PointFlags = Types.PointFlags;
+    var LineJoin = Types.LineJoin;
+    var LineCap = Types.LineCap;
+    function Impl() {
+      this.cmds = [];
+      this.style = {
+        strokeStyle: "black",
+        fillStyle: "white",
+        lineCap: "butt",
+        lineJoin: "miter",
+        miterLimit: 10
+      };
+    }
+    var _proto = Impl.prototype;
+    js.mixin(_proto, {
+      moveTo: function(x, y) {
+        this.cmds.push([ "moveTo", [ x, y ] ]);
+      },
+      lineTo: function(x, y) {
+        this.cmds.push([ "lineTo", [ x, y ] ]);
+      },
+      bezierCurveTo: function(c1x, c1y, c2x, c2y, x, y) {
+        this.cmds.push([ "bezierCurveTo", [ c1x, c1y, c2x, c2y, x, y ] ]);
+      },
+      quadraticCurveTo: function(cx, cy, x, y) {
+        this.cmds.push([ "quadraticCurveTo", [ cx, cy, x, y ] ]);
+      },
+      arc: function(cx, cy, r, startAngle, endAngle, counterclockwise) {
+        Helper.arc(this, cx, cy, r, startAngle, endAngle, counterclockwise);
+      },
+      ellipse: function(cx, cy, rx, ry) {
+        Helper.ellipse(this, cx, cy, rx, ry);
+      },
+      circle: function(cx, cy, r) {
+        Helper.ellipse(this, cx, cy, r, r);
+      },
+      rect: function(x, y, w, h) {
+        this.moveTo(x, y);
+        this.lineTo(x, y + h);
+        this.lineTo(x + w, y + h);
+        this.lineTo(x + w, y);
+        this.close();
+      },
+      roundRect: function(x, y, w, h, r) {
+        Helper.roundRect(this, x, y, w, h, r);
+      },
+      clear: function(comp, clean) {
+        this.cmds.length = 0;
+      },
+      close: function() {
+        this.cmds.push([ "closePath", [] ]);
+      },
+      stroke: function() {
+        this.cmds.push([ "stroke", [] ]);
+      },
+      fill: function() {
+        this.cmds.push([ "fill", [] ]);
+      }
+    });
+    js.set(_proto, "strokeColor", (function(v) {
+      var strokeStyle = "rgba(" + (0 | v.r) + "," + (0 | v.g) + "," + (0 | v.b) + "," + v.a / 255 + ")";
+      this.cmds.push([ "strokeStyle", strokeStyle ]);
+      this.style.strokeStyle = strokeStyle;
+    }));
+    js.set(_proto, "fillColor", (function(v) {
+      var fillStyle = "rgba(" + (0 | v.r) + "," + (0 | v.g) + "," + (0 | v.b) + "," + v.a / 255 + ")";
+      this.cmds.push([ "fillStyle", fillStyle ]);
+      this.style.fillStyle = fillStyle;
+    }));
+    js.set(_proto, "lineWidth", (function(v) {
+      this.cmds.push([ "lineWidth", v ]);
+      this.style.lineWidth = v;
+    }));
+    js.set(_proto, "lineCap", (function(v) {
+      var lineCap = "butt";
+      v === LineCap.BUTT ? lineCap = "butt" : v === LineCap.ROUND ? lineCap = "round" : v === LineCap.SQUARE && (lineCap = "square");
+      this.cmds.push([ "lineCap", lineCap ]);
+      this.style.lineCap = lineCap;
+    }));
+    js.set(_proto, "lineJoin", (function(v) {
+      var lineJoin = "bevel";
+      v === LineJoin.BEVEL ? lineJoin = "bevel" : v === LineJoin.ROUND ? lineJoin = "round" : v === LineJoin.MITER && (lineJoin = "miter");
+      this.cmds.push([ "lineJoin", lineJoin ]);
+      this.style.lineJoin = lineJoin;
+    }));
+    js.set(_proto, "miterLimit", (function(v) {
+      this.cmds.push([ "miterLimit", v ]);
+      this.style.miterLimit = v;
+    }));
+    module.exports = Impl;
+  }), {
+    "../../../../graphics/helper": 88,
+    "../../../../graphics/types": 90,
+    "../../../../platform/js": 134
+  } ],
+  144: [ (function(require, module, exports) {
+    var Impl = require("./impl");
+    module.exports = {
+      createImpl: function() {
+        return new Impl();
+      },
+      draw: function(ctx, comp) {
+        var node = comp.node;
+        var matrix = node._worldMatrix;
+        var a = matrix.m00, b = matrix.m01, c = matrix.m04, d = matrix.m05, tx = matrix.m12, ty = matrix.m13;
+        ctx.transform(a, b, c, d, tx, ty);
+        ctx.save();
+        ctx.globalAlpha = node.opacity / 255;
+        var style = comp._impl.style;
+        ctx.strokeStyle = style.strokeStyle;
+        ctx.fillStyle = style.fillStyle;
+        ctx.lineWidth = style.lineWidth;
+        ctx.lineJoin = style.lineJoin;
+        ctx.miterLimit = style.miterLimit;
+        var endPath = true;
+        var cmds = comp._impl.cmds;
+        for (var i = 0, l = cmds.length; i < l; i++) {
+          var cmd = cmds[i];
+          var ctxCmd = cmd[0], args = cmd[1];
+          if ("moveTo" === ctxCmd && endPath) {
+            ctx.beginPath();
+            endPath = false;
+          } else "fill" !== ctxCmd && "stroke" !== ctxCmd && "fillRect" !== ctxCmd || (endPath = true);
+          "function" === typeof ctx[ctxCmd] ? ctx[ctxCmd].apply(ctx, args) : ctx[ctxCmd] = args;
+        }
+        ctx.restore();
+        return 1;
+      },
+      stroke: function(comp) {
+        comp._impl.stroke();
+      },
+      fill: function(comp) {
+        comp._impl.fill();
+      }
+    };
+  }), {
+    "./impl": 143
+  } ],
+  145: [ (function(require, module, exports) {
     var js = require("../../../platform/js");
     var Sprite = require("../../../components/CCSprite");
     var Label = require("../../../components/CCLabel");
@@ -22688,17 +24849,17 @@
       addRenderer: addRenderer
     };
   }), {
-    "../../../components/CCLabel": 58,
-    "../../../components/CCMask": void 0,
-    "../../../components/CCSprite": 66,
-    "../../../graphics/graphics": void 0,
-    "../../../platform/js": 126,
-    "./graphics": void 0,
-    "./label": 137,
-    "./mask": void 0,
-    "./sprite": 139
+    "../../../components/CCLabel": 62,
+    "../../../components/CCMask": 65,
+    "../../../components/CCSprite": 71,
+    "../../../graphics/graphics": 87,
+    "../../../platform/js": 134,
+    "./graphics": 144,
+    "./label": 147,
+    "./mask": 149,
+    "./sprite": 150
   } ],
-  136: [ (function(require, module, exports) {
+  146: [ (function(require, module, exports) {
     var bmfontUtils = require("../../../utils/label/bmfont");
     var js = require("../../../../platform/js");
     var utils = require("../utils");
@@ -22762,11 +24923,11 @@
       }
     }, bmfontUtils);
   }), {
-    "../../../../platform/js": 126,
-    "../../../utils/label/bmfont": 147,
-    "../utils": 143
+    "../../../../platform/js": 134,
+    "../../../utils/label/bmfont": 158,
+    "../utils": 154
   } ],
-  137: [ (function(require, module, exports) {
+  147: [ (function(require, module, exports) {
     var ttf = require("./ttf");
     var bmfont = require("./bmfont");
     module.exports = {
@@ -22787,10 +24948,10 @@
       }
     };
   }), {
-    "./bmfont": 136,
-    "./ttf": 138
+    "./bmfont": 146,
+    "./ttf": 148
   } ],
-  138: [ (function(require, module, exports) {
+  148: [ (function(require, module, exports) {
     var ttfUtils = require("../../../utils/label/ttf");
     var js = require("../../../../platform/js");
     var utils = require("../utils");
@@ -22832,11 +24993,36 @@
       }
     }, ttfUtils);
   }), {
-    "../../../../platform/js": 126,
-    "../../../utils/label/ttf": 148,
-    "../utils": 143
+    "../../../../platform/js": 134,
+    "../../../utils/label/ttf": 159,
+    "../utils": 154
   } ],
-  139: [ (function(require, module, exports) {
+  149: [ (function(require, module, exports) {
+    var Mask = require("../../../components/CCMask");
+    var graphicsHandler = require("./graphics");
+    var beforeHandler = {
+      updateRenderData: function(comp) {},
+      draw: function(ctx, mask) {
+        ctx.save();
+        graphicsHandler.draw(ctx, mask._graphics);
+        ctx.clip();
+      }
+    };
+    var afterHandler = {
+      updateRenderData: function(comp) {},
+      draw: function(ctx, mask) {
+        ctx.restore();
+      }
+    };
+    module.exports = {
+      beforeHandler: beforeHandler,
+      afterHandler: afterHandler
+    };
+  }), {
+    "../../../components/CCMask": 65,
+    "./graphics": 144
+  } ],
+  150: [ (function(require, module, exports) {
     var Sprite = require("../../../../components/CCSprite");
     var SpriteType = Sprite.Type;
     var FillType = Sprite.FillType;
@@ -22864,12 +25050,12 @@
       }
     };
   }), {
-    "../../../../components/CCSprite": 66,
-    "./simple": 140,
-    "./sliced": 141,
-    "./tiled": 142
+    "../../../../components/CCSprite": 71,
+    "./simple": 151,
+    "./sliced": 152,
+    "./tiled": 153
   } ],
-  140: [ (function(require, module, exports) {
+  151: [ (function(require, module, exports) {
     var utils = require("../utils");
     var renderer = {
       createData: function(sprite) {
@@ -22958,9 +25144,9 @@
     };
     module.exports = renderer;
   }), {
-    "../utils": 143
+    "../utils": 154
   } ],
-  141: [ (function(require, module, exports) {
+  152: [ (function(require, module, exports) {
     var utils = require("../utils");
     var simple = require("./simple");
     var renderer = {
@@ -23066,10 +25252,10 @@
     };
     module.exports = renderer;
   }), {
-    "../utils": 143,
-    "./simple": 140
+    "../utils": 154,
+    "./simple": 151
   } ],
-  142: [ (function(require, module, exports) {
+  153: [ (function(require, module, exports) {
     var utils = require("../utils");
     var simple = require("./simple");
     var renderer = {
@@ -23105,10 +25291,10 @@
     };
     module.exports = renderer;
   }), {
-    "../utils": 143,
-    "./simple": 140
+    "../utils": 154,
+    "./simple": 151
   } ],
-  143: [ (function(require, module, exports) {
+  154: [ (function(require, module, exports) {
     var WHITE = 16777215;
     var MAX_CANVAS_COUNT = 32;
     function colorizedFrame(canvas, texture, color, sx, sy, sw, sh) {
@@ -23209,7 +25395,7 @@
       }
     };
   }), {} ],
-  144: [ (function(require, module, exports) {
+  155: [ (function(require, module, exports) {
     var renderEngine = require("./render-engine");
     var math = renderEngine.math;
     var _pos = math.vec3.create();
@@ -23305,12 +25491,12 @@
       }
     };
   }), {
-    "./canvas": 134,
-    "./render-engine": 145,
-    "./webgl/assemblers": 149,
-    "./webgl/render-component-walker": 172
+    "./canvas": 142,
+    "./render-engine": 156,
+    "./webgl/assemblers": 163,
+    "./webgl/render-component-walker": 187
   } ],
-  145: [ (function(require, module, exports) {
+  156: [ (function(require, module, exports) {
     "use strict";
     var _d2r = Math.PI / 180;
     var _r2d = 180 / Math.PI;
@@ -31376,7 +33562,7 @@
     };
     module.exports = renderEngine;
   }), {} ],
-  146: [ (function(require, module, exports) {
+  157: [ (function(require, module, exports) {
     var DONOTHING = 0;
     var LOCAL_TRANSFORM = 1;
     var WORLD_TRANSFORM = 2;
@@ -31572,7 +33758,7 @@
     RenderFlow.FLAG_FINAL = FINAL;
     module.exports = cc.RenderFlow = RenderFlow;
   }), {} ],
-  147: [ (function(require, module, exports) {
+  158: [ (function(require, module, exports) {
     var macro = require("../../../platform/CCMacro");
     var Label = require("../../../components/CCLabel");
     var Overflow = Label.Overflow;
@@ -32048,11 +34234,11 @@
       }
     };
   }), {
-    "../../../components/CCLabel": 58,
-    "../../../platform/CCMacro": 111,
-    "../../../utils/text-utils": 189
+    "../../../components/CCLabel": 62,
+    "../../../platform/CCMacro": 119,
+    "../../../utils/text-utils": 204
   } ],
-  148: [ (function(require, module, exports) {
+  159: [ (function(require, module, exports) {
     var macro = require("../../../platform/CCMacro");
     var textUtils = require("../../../utils/text-utils");
     var Component = require("../../../components/CCComponent");
@@ -32350,26 +34536,1019 @@
       }
     };
   }), {
-    "../../../components/CCComponent": 56,
-    "../../../components/CCLabel": 58,
-    "../../../components/CCLabelOutline": 59,
-    "../../../platform/CCMacro": 111,
-    "../../../utils/text-utils": 189
+    "../../../components/CCComponent": 60,
+    "../../../components/CCLabel": 62,
+    "../../../components/CCLabelOutline": 63,
+    "../../../platform/CCMacro": 119,
+    "../../../utils/text-utils": 204
   } ],
-  149: [ (function(require, module, exports) {
+  160: [ (function(require, module, exports) {
+    "use strict";
+    module.exports = earcut;
+    function earcut(data, holeIndices, dim) {
+      dim = dim || 2;
+      var hasHoles = holeIndices && holeIndices.length, outerLen = hasHoles ? holeIndices[0] * dim : data.length, outerNode = linkedList(data, 0, outerLen, dim, true), triangles = [];
+      if (!outerNode) return triangles;
+      var minX, minY, maxX, maxY, x, y, size;
+      hasHoles && (outerNode = eliminateHoles(data, holeIndices, outerNode, dim));
+      if (data.length > 80 * dim) {
+        minX = maxX = data[0];
+        minY = maxY = data[1];
+        for (var i = dim; i < outerLen; i += dim) {
+          x = data[i];
+          y = data[i + 1];
+          x < minX && (minX = x);
+          y < minY && (minY = y);
+          x > maxX && (maxX = x);
+          y > maxY && (maxY = y);
+        }
+        size = Math.max(maxX - minX, maxY - minY);
+      }
+      earcutLinked(outerNode, triangles, dim, minX, minY, size);
+      return triangles;
+    }
+    function linkedList(data, start, end, dim, clockwise) {
+      var i, last;
+      if (clockwise === signedArea(data, start, end, dim) > 0) for (i = start; i < end; i += dim) last = insertNode(i, data[i], data[i + 1], last); else for (i = end - dim; i >= start; i -= dim) last = insertNode(i, data[i], data[i + 1], last);
+      if (last && equals(last, last.next)) {
+        removeNode(last);
+        last = last.next;
+      }
+      return last;
+    }
+    function filterPoints(start, end) {
+      if (!start) return start;
+      end || (end = start);
+      var p = start, again;
+      do {
+        again = false;
+        if (p.steiner || !equals(p, p.next) && 0 !== area(p.prev, p, p.next)) p = p.next; else {
+          removeNode(p);
+          p = end = p.prev;
+          if (p === p.next) return null;
+          again = true;
+        }
+      } while (again || p !== end);
+      return end;
+    }
+    function earcutLinked(ear, triangles, dim, minX, minY, size, pass) {
+      if (!ear) return;
+      !pass && size && indexCurve(ear, minX, minY, size);
+      var stop = ear, prev, next;
+      while (ear.prev !== ear.next) {
+        prev = ear.prev;
+        next = ear.next;
+        if (size ? isEarHashed(ear, minX, minY, size) : isEar(ear)) {
+          triangles.push(prev.i / dim);
+          triangles.push(ear.i / dim);
+          triangles.push(next.i / dim);
+          removeNode(ear);
+          ear = next.next;
+          stop = next.next;
+          continue;
+        }
+        ear = next;
+        if (ear === stop) {
+          if (pass) if (1 === pass) {
+            ear = cureLocalIntersections(ear, triangles, dim);
+            earcutLinked(ear, triangles, dim, minX, minY, size, 2);
+          } else 2 === pass && splitEarcut(ear, triangles, dim, minX, minY, size); else earcutLinked(filterPoints(ear), triangles, dim, minX, minY, size, 1);
+          break;
+        }
+      }
+    }
+    function isEar(ear) {
+      var a = ear.prev, b = ear, c = ear.next;
+      if (area(a, b, c) >= 0) return false;
+      var p = ear.next.next;
+      while (p !== ear.prev) {
+        if (pointInTriangle(a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
+        p = p.next;
+      }
+      return true;
+    }
+    function isEarHashed(ear, minX, minY, size) {
+      var a = ear.prev, b = ear, c = ear.next;
+      if (area(a, b, c) >= 0) return false;
+      var minTX = a.x < b.x ? a.x < c.x ? a.x : c.x : b.x < c.x ? b.x : c.x, minTY = a.y < b.y ? a.y < c.y ? a.y : c.y : b.y < c.y ? b.y : c.y, maxTX = a.x > b.x ? a.x > c.x ? a.x : c.x : b.x > c.x ? b.x : c.x, maxTY = a.y > b.y ? a.y > c.y ? a.y : c.y : b.y > c.y ? b.y : c.y;
+      var minZ = zOrder(minTX, minTY, minX, minY, size), maxZ = zOrder(maxTX, maxTY, minX, minY, size);
+      var p = ear.nextZ;
+      while (p && p.z <= maxZ) {
+        if (p !== ear.prev && p !== ear.next && pointInTriangle(a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
+        p = p.nextZ;
+      }
+      p = ear.prevZ;
+      while (p && p.z >= minZ) {
+        if (p !== ear.prev && p !== ear.next && pointInTriangle(a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
+        p = p.prevZ;
+      }
+      return true;
+    }
+    function cureLocalIntersections(start, triangles, dim) {
+      var p = start;
+      do {
+        var a = p.prev, b = p.next.next;
+        if (!equals(a, b) && intersects(a, p, p.next, b) && locallyInside(a, b) && locallyInside(b, a)) {
+          triangles.push(a.i / dim);
+          triangles.push(p.i / dim);
+          triangles.push(b.i / dim);
+          removeNode(p);
+          removeNode(p.next);
+          p = start = b;
+        }
+        p = p.next;
+      } while (p !== start);
+      return p;
+    }
+    function splitEarcut(start, triangles, dim, minX, minY, size) {
+      var a = start;
+      do {
+        var b = a.next.next;
+        while (b !== a.prev) {
+          if (a.i !== b.i && isValidDiagonal(a, b)) {
+            var c = splitPolygon(a, b);
+            a = filterPoints(a, a.next);
+            c = filterPoints(c, c.next);
+            earcutLinked(a, triangles, dim, minX, minY, size);
+            earcutLinked(c, triangles, dim, minX, minY, size);
+            return;
+          }
+          b = b.next;
+        }
+        a = a.next;
+      } while (a !== start);
+    }
+    function eliminateHoles(data, holeIndices, outerNode, dim) {
+      var queue = [], i, len, start, end, list;
+      for (i = 0, len = holeIndices.length; i < len; i++) {
+        start = holeIndices[i] * dim;
+        end = i < len - 1 ? holeIndices[i + 1] * dim : data.length;
+        list = linkedList(data, start, end, dim, false);
+        list === list.next && (list.steiner = true);
+        queue.push(getLeftmost(list));
+      }
+      queue.sort(compareX);
+      for (i = 0; i < queue.length; i++) {
+        eliminateHole(queue[i], outerNode);
+        outerNode = filterPoints(outerNode, outerNode.next);
+      }
+      return outerNode;
+    }
+    function compareX(a, b) {
+      return a.x - b.x;
+    }
+    function eliminateHole(hole, outerNode) {
+      outerNode = findHoleBridge(hole, outerNode);
+      if (outerNode) {
+        var b = splitPolygon(outerNode, hole);
+        filterPoints(b, b.next);
+      }
+    }
+    function findHoleBridge(hole, outerNode) {
+      var p = outerNode, hx = hole.x, hy = hole.y, qx = -Infinity, m;
+      do {
+        if (hy <= p.y && hy >= p.next.y) {
+          var x = p.x + (hy - p.y) * (p.next.x - p.x) / (p.next.y - p.y);
+          if (x <= hx && x > qx) {
+            qx = x;
+            if (x === hx) {
+              if (hy === p.y) return p;
+              if (hy === p.next.y) return p.next;
+            }
+            m = p.x < p.next.x ? p : p.next;
+          }
+        }
+        p = p.next;
+      } while (p !== outerNode);
+      if (!m) return null;
+      if (hx === qx) return m.prev;
+      var stop = m, mx = m.x, my = m.y, tanMin = Infinity, tan;
+      p = m.next;
+      while (p !== stop) {
+        if (hx >= p.x && p.x >= mx && pointInTriangle(hy < my ? hx : qx, hy, mx, my, hy < my ? qx : hx, hy, p.x, p.y)) {
+          tan = Math.abs(hy - p.y) / (hx - p.x);
+          if ((tan < tanMin || tan === tanMin && p.x > m.x) && locallyInside(p, hole)) {
+            m = p;
+            tanMin = tan;
+          }
+        }
+        p = p.next;
+      }
+      return m;
+    }
+    function indexCurve(start, minX, minY, size) {
+      var p = start;
+      do {
+        null === p.z && (p.z = zOrder(p.x, p.y, minX, minY, size));
+        p.prevZ = p.prev;
+        p.nextZ = p.next;
+        p = p.next;
+      } while (p !== start);
+      p.prevZ.nextZ = null;
+      p.prevZ = null;
+      sortLinked(p);
+    }
+    function sortLinked(list) {
+      var i, p, q, e, tail, numMerges, pSize, qSize, inSize = 1;
+      do {
+        p = list;
+        list = null;
+        tail = null;
+        numMerges = 0;
+        while (p) {
+          numMerges++;
+          q = p;
+          pSize = 0;
+          for (i = 0; i < inSize; i++) {
+            pSize++;
+            q = q.nextZ;
+            if (!q) break;
+          }
+          qSize = inSize;
+          while (pSize > 0 || qSize > 0 && q) {
+            if (0 === pSize) {
+              e = q;
+              q = q.nextZ;
+              qSize--;
+            } else if (0 !== qSize && q) if (p.z <= q.z) {
+              e = p;
+              p = p.nextZ;
+              pSize--;
+            } else {
+              e = q;
+              q = q.nextZ;
+              qSize--;
+            } else {
+              e = p;
+              p = p.nextZ;
+              pSize--;
+            }
+            tail ? tail.nextZ = e : list = e;
+            e.prevZ = tail;
+            tail = e;
+          }
+          p = q;
+        }
+        tail.nextZ = null;
+        inSize *= 2;
+      } while (numMerges > 1);
+      return list;
+    }
+    function zOrder(x, y, minX, minY, size) {
+      x = 32767 * (x - minX) / size;
+      y = 32767 * (y - minY) / size;
+      x = 16711935 & (x | x << 8);
+      x = 252645135 & (x | x << 4);
+      x = 858993459 & (x | x << 2);
+      x = 1431655765 & (x | x << 1);
+      y = 16711935 & (y | y << 8);
+      y = 252645135 & (y | y << 4);
+      y = 858993459 & (y | y << 2);
+      y = 1431655765 & (y | y << 1);
+      return x | y << 1;
+    }
+    function getLeftmost(start) {
+      var p = start, leftmost = start;
+      do {
+        p.x < leftmost.x && (leftmost = p);
+        p = p.next;
+      } while (p !== start);
+      return leftmost;
+    }
+    function pointInTriangle(ax, ay, bx, by, cx, cy, px, py) {
+      return (cx - px) * (ay - py) - (ax - px) * (cy - py) >= 0 && (ax - px) * (by - py) - (bx - px) * (ay - py) >= 0 && (bx - px) * (cy - py) - (cx - px) * (by - py) >= 0;
+    }
+    function isValidDiagonal(a, b) {
+      return a.next.i !== b.i && a.prev.i !== b.i && !intersectsPolygon(a, b) && locallyInside(a, b) && locallyInside(b, a) && middleInside(a, b);
+    }
+    function area(p, q, r) {
+      return (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+    }
+    function equals(p1, p2) {
+      return p1.x === p2.x && p1.y === p2.y;
+    }
+    function intersects(p1, q1, p2, q2) {
+      if (equals(p1, q1) && equals(p2, q2) || equals(p1, q2) && equals(p2, q1)) return true;
+      return area(p1, q1, p2) > 0 !== area(p1, q1, q2) > 0 && area(p2, q2, p1) > 0 !== area(p2, q2, q1) > 0;
+    }
+    function intersectsPolygon(a, b) {
+      var p = a;
+      do {
+        if (p.i !== a.i && p.next.i !== a.i && p.i !== b.i && p.next.i !== b.i && intersects(p, p.next, a, b)) return true;
+        p = p.next;
+      } while (p !== a);
+      return false;
+    }
+    function locallyInside(a, b) {
+      return area(a.prev, a, a.next) < 0 ? area(a, b, a.next) >= 0 && area(a, a.prev, b) >= 0 : area(a, b, a.prev) < 0 || area(a, a.next, b) < 0;
+    }
+    function middleInside(a, b) {
+      var p = a, inside = false, px = (a.x + b.x) / 2, py = (a.y + b.y) / 2;
+      do {
+        p.y > py !== p.next.y > py && px < (p.next.x - p.x) * (py - p.y) / (p.next.y - p.y) + p.x && (inside = !inside);
+        p = p.next;
+      } while (p !== a);
+      return inside;
+    }
+    function splitPolygon(a, b) {
+      var a2 = new Node(a.i, a.x, a.y), b2 = new Node(b.i, b.x, b.y), an = a.next, bp = b.prev;
+      a.next = b;
+      b.prev = a;
+      a2.next = an;
+      an.prev = a2;
+      b2.next = a2;
+      a2.prev = b2;
+      bp.next = b2;
+      b2.prev = bp;
+      return b2;
+    }
+    function insertNode(i, x, y, last) {
+      var p = new Node(i, x, y);
+      if (last) {
+        p.next = last.next;
+        p.prev = last;
+        last.next.prev = p;
+        last.next = p;
+      } else {
+        p.prev = p;
+        p.next = p;
+      }
+      return p;
+    }
+    function removeNode(p) {
+      p.next.prev = p.prev;
+      p.prev.next = p.next;
+      p.prevZ && (p.prevZ.nextZ = p.nextZ);
+      p.nextZ && (p.nextZ.prevZ = p.prevZ);
+    }
+    function Node(i, x, y) {
+      this.i = i;
+      this.x = x;
+      this.y = y;
+      this.prev = null;
+      this.next = null;
+      this.z = null;
+      this.prevZ = null;
+      this.nextZ = null;
+      this.steiner = false;
+    }
+    earcut.deviation = function(data, holeIndices, dim, triangles) {
+      var hasHoles = holeIndices && holeIndices.length;
+      var outerLen = hasHoles ? holeIndices[0] * dim : data.length;
+      var polygonArea = Math.abs(signedArea(data, 0, outerLen, dim));
+      if (hasHoles) for (var i = 0, len = holeIndices.length; i < len; i++) {
+        var start = holeIndices[i] * dim;
+        var end = i < len - 1 ? holeIndices[i + 1] * dim : data.length;
+        polygonArea -= Math.abs(signedArea(data, start, end, dim));
+      }
+      var trianglesArea = 0;
+      for (i = 0; i < triangles.length; i += 3) {
+        var a = triangles[i] * dim;
+        var b = triangles[i + 1] * dim;
+        var c = triangles[i + 2] * dim;
+        trianglesArea += Math.abs((data[a] - data[c]) * (data[b + 1] - data[a + 1]) - (data[a] - data[b]) * (data[c + 1] - data[a + 1]));
+      }
+      return 0 === polygonArea && 0 === trianglesArea ? 0 : Math.abs((trianglesArea - polygonArea) / polygonArea);
+    };
+    function signedArea(data, start, end, dim) {
+      var sum = 0;
+      for (var i = start, j = end - dim; i < end; i += dim) {
+        sum += (data[j] - data[i]) * (data[i + 1] + data[j + 1]);
+        j = i;
+      }
+      return sum;
+    }
+    earcut.flatten = function(data) {
+      var dim = data[0][0].length, result = {
+        vertices: [],
+        holes: [],
+        dimensions: dim
+      }, holeIndex = 0;
+      for (var i = 0; i < data.length; i++) {
+        for (var j = 0; j < data[i].length; j++) for (var d = 0; d < dim; d++) result.vertices.push(data[i][j][d]);
+        if (i > 0) {
+          holeIndex += data[i - 1].length;
+          result.holes.push(holeIndex);
+        }
+      }
+      return result;
+    };
+  }), {} ],
+  161: [ (function(require, module, exports) {
+    var Helper = require("../../../../graphics/helper");
+    var PointFlags = require("../../../../graphics/types").PointFlags;
+    var MeshBuffer = require("../../mesh-buffer");
+    var vfmtPosColor = require("../../vertex-format").vfmtPosColor;
+    var renderer = require("../../../index");
+    var renderEngine = renderer.renderEngine;
+    var IARenderData = renderEngine.IARenderData;
+    var InputAssembler = renderEngine.InputAssembler;
+    var Point = cc.Class({
+      name: "cc.GraphicsPoint",
+      extends: cc.Vec2,
+      ctor: function(x, y) {
+        this.reset();
+      },
+      reset: function() {
+        this.dx = 0;
+        this.dy = 0;
+        this.dmx = 0;
+        this.dmy = 0;
+        this.flags = 0;
+        this.len = 0;
+      }
+    });
+    function Path() {
+      this.reset();
+    }
+    cc.js.mixin(Path.prototype, {
+      reset: function() {
+        this.closed = false;
+        this.nbevel = 0;
+        this.complex = true;
+        this.points ? this.points.length = 0 : this.points = [];
+      }
+    });
+    function Impl(graphics) {
+      this._tessTol = .25;
+      this._distTol = .01;
+      this._updatePathOffset = false;
+      this._paths = null;
+      this._pathLength = 0;
+      this._pathOffset = 0;
+      this._points = null;
+      this._pointsOffset = 0;
+      this._commandx = 0;
+      this._commandy = 0;
+      this._paths = [];
+      this._points = [];
+      this._renderDatas = [];
+      this._dataOffset = 0;
+    }
+    cc.js.mixin(Impl.prototype, {
+      moveTo: function(x, y) {
+        if (this._updatePathOffset) {
+          this._pathOffset = this._pathLength;
+          this._updatePathOffset = false;
+        }
+        this._addPath();
+        this._addPoint(x, y, PointFlags.PT_CORNER);
+        this._commandx = x;
+        this._commandy = y;
+      },
+      lineTo: function(x, y) {
+        this._addPoint(x, y, PointFlags.PT_CORNER);
+        this._commandx = x;
+        this._commandy = y;
+      },
+      bezierCurveTo: function(c1x, c1y, c2x, c2y, x, y) {
+        var path = this._curPath;
+        var last = path.points[path.points.length - 1];
+        if (last.x === c1x && last.y === c1y && c2x === x && c2y === y) {
+          this.lineTo(x, y);
+          return;
+        }
+        Helper.tesselateBezier(this, last.x, last.y, c1x, c1y, c2x, c2y, x, y, 0, PointFlags.PT_CORNER);
+        this._commandx = x;
+        this._commandy = y;
+      },
+      quadraticCurveTo: function(cx, cy, x, y) {
+        var x0 = this._commandx;
+        var y0 = this._commandy;
+        this.bezierCurveTo(x0 + 2 / 3 * (cx - x0), y0 + 2 / 3 * (cy - y0), x + 2 / 3 * (cx - x), y + 2 / 3 * (cy - y), x, y);
+      },
+      arc: function(cx, cy, r, startAngle, endAngle, counterclockwise) {
+        Helper.arc(this, cx, cy, r, startAngle, endAngle, counterclockwise);
+      },
+      ellipse: function(cx, cy, rx, ry) {
+        Helper.ellipse(this, cx, cy, rx, ry);
+        this._curPath.complex = false;
+      },
+      circle: function(cx, cy, r) {
+        Helper.ellipse(this, cx, cy, r, r);
+        this._curPath.complex = false;
+      },
+      rect: function(x, y, w, h) {
+        this.moveTo(x, y);
+        this.lineTo(x, y + h);
+        this.lineTo(x + w, y + h);
+        this.lineTo(x + w, y);
+        this.close();
+        this._curPath.complex = false;
+      },
+      roundRect: function(x, y, w, h, r) {
+        Helper.roundRect(this, x, y, w, h, r);
+        this._curPath.complex = false;
+      },
+      clear: function(comp, clean) {
+        this._pathLength = 0;
+        this._pathOffset = 0;
+        this._pointsOffset = 0;
+        this._dataOffset = 0;
+        this._curPath = null;
+        var datas = this._renderDatas;
+        if (clean) {
+          this._paths.length = 0;
+          this._points.length = 0;
+          for (var i = 0, l = datas.length; i < l; i++) {
+            var data = datas[i];
+            data.meshbuffer.destroy();
+            data.meshbuffer = null;
+          }
+          datas.length = 0;
+        } else for (var _i = 0, _l = datas.length; _i < _l; _i++) {
+          var _data = datas[_i];
+          var meshbuffer = _data.meshbuffer;
+          meshbuffer.reset();
+        }
+      },
+      close: function() {
+        this._curPath.closed = true;
+      },
+      _addPath: function() {
+        var offset = this._pathLength;
+        var path = this._paths[offset];
+        if (path) path.reset(); else {
+          path = new Path();
+          this._paths.push(path);
+        }
+        this._pathLength++;
+        this._curPath = path;
+        return path;
+      },
+      _addPoint: function(x, y, flags) {
+        var path = this._curPath;
+        if (!path) return;
+        var pt;
+        var points = this._points;
+        var pathPoints = path.points;
+        var offset = this._pointsOffset++;
+        pt = points[offset];
+        if (pt) {
+          pt.x = x;
+          pt.y = y;
+        } else {
+          pt = new Point(x, y);
+          points.push(pt);
+        }
+        pt.flags = flags;
+        pathPoints.push(pt);
+      },
+      requestRenderData: function() {
+        var renderData = new IARenderData();
+        var meshbuffer = new MeshBuffer(renderer._walker, vfmtPosColor);
+        renderData.meshbuffer = meshbuffer;
+        this._renderDatas.push(renderData);
+        var ia = new InputAssembler();
+        ia._vertexBuffer = meshbuffer._vb;
+        ia._indexBuffer = meshbuffer._ib;
+        ia._start = 0;
+        renderData.ia = ia;
+        return renderData;
+      },
+      getRenderDatas: function() {
+        0 === this._renderDatas.length && this.requestRenderData();
+        return this._renderDatas;
+      }
+    });
+    module.exports = Impl;
+  }), {
+    "../../../../graphics/helper": 88,
+    "../../../../graphics/types": 90,
+    "../../../index": 155,
+    "../../mesh-buffer": 185,
+    "../../vertex-format": 189
+  } ],
+  162: [ (function(require, module, exports) {
+    var Graphics = require("../../../../graphics/graphics");
+    var PointFlags = require("../../../../graphics/types").PointFlags;
+    var LineJoin = Graphics.LineJoin;
+    var LineCap = Graphics.LineCap;
+    var Earcut = require("./earcut");
+    var Impl = require("./impl");
+    var MAX_VERTEX = 65535;
+    var MAX_INDICE = 2 * MAX_VERTEX;
+    var PI = Math.PI;
+    var min = Math.min;
+    var max = Math.max;
+    var ceil = Math.ceil;
+    var acos = Math.acos;
+    var cos = Math.cos;
+    var sin = Math.sin;
+    var atan2 = Math.atan2;
+    var abs = Math.abs;
+    var _renderData = null;
+    var _impl = null;
+    var _curColor = 0;
+    function curveDivs(r, arc, tol) {
+      var da = 2 * acos(r / (r + tol));
+      return max(2, ceil(arc / da));
+    }
+    function clamp(v, min, max) {
+      if (v < min) return min;
+      if (v > max) return max;
+      return v;
+    }
+    var graphicsAssembler = {
+      useModel: true,
+      createImpl: function(graphics) {
+        return new Impl(graphics);
+      },
+      updateRenderData: function(graphics) {
+        var datas = graphics._impl.getRenderDatas();
+        for (var i = 0, l = datas.length; i < l; i++) datas[i].material = graphics.getMaterial();
+      },
+      fillBuffers: function(graphics, renderer) {
+        renderer._flush();
+        var tempNode = renderer.node;
+        renderer.node = graphics.node;
+        this.renderIA(graphics, renderer);
+        renderer.node = tempNode;
+      },
+      renderIA: function(graphics, renderer) {
+        var node = graphics.node;
+        var nodeColor = node.color, nodeR = nodeColor.r / 255, nodeG = nodeColor.g / 255, nodeB = nodeColor.b / 255, nodeA = nodeColor.a / 255;
+        var impl = graphics._impl;
+        var renderDatas = impl.getRenderDatas();
+        for (var index = 0, length = renderDatas.length; index < length; index++) {
+          var renderData = renderDatas[index];
+          var meshbuffer = renderData.meshbuffer;
+          renderData.ia._count = meshbuffer.indiceStart;
+          renderer._flushIA(renderData);
+          meshbuffer.uploadData();
+        }
+      },
+      genRenderData: function(graphics, cverts) {
+        var renderDatas = _impl.getRenderDatas();
+        var renderData = renderDatas[_impl._dataOffset];
+        var meshbuffer = renderData.meshbuffer;
+        var maxVertsCount = meshbuffer.vertexStart + cverts;
+        if (maxVertsCount > MAX_VERTEX || 3 * maxVertsCount > MAX_INDICE) {
+          ++_impl._dataOffset;
+          maxVertsCount = cverts;
+          if (_impl._dataOffset < renderDatas.length) renderData = renderDatas[_impl._dataOffset]; else {
+            renderData = _impl.requestRenderData(graphics);
+            renderDatas[_impl._dataOffset] = renderData;
+          }
+          renderData.material = graphics.getMaterial();
+          meshbuffer = renderData.meshbuffer;
+        }
+        maxVertsCount > meshbuffer.vertexOffset && meshbuffer.requestStatic(cverts, 3 * cverts);
+        return renderData;
+      },
+      stroke: function(graphics) {
+        _curColor = graphics._strokeColor._val;
+        this._flattenPaths(graphics._impl);
+        this._expandStroke(graphics);
+        graphics._impl._updatePathOffset = true;
+      },
+      fill: function(graphics) {
+        _curColor = graphics._fillColor._val;
+        this._expandFill(graphics);
+        graphics._impl._updatePathOffset = true;
+      },
+      _expandStroke: function(graphics) {
+        var w = .5 * graphics.lineWidth, lineCap = graphics.lineCap, lineJoin = graphics.lineJoin, miterLimit = graphics.miterLimit;
+        _impl = graphics._impl;
+        var ncap = curveDivs(w, PI, _impl._tessTol);
+        this._calculateJoins(_impl, w, lineJoin, miterLimit);
+        var paths = _impl._paths;
+        var cverts = 0;
+        for (var i = _impl._pathOffset, l = _impl._pathLength; i < l; i++) {
+          var path = paths[i];
+          var pointsLength = path.points.length;
+          lineJoin === LineJoin.ROUND ? cverts += 2 * (pointsLength + path.nbevel * (ncap + 2) + 1) : cverts += 2 * (pointsLength + 5 * path.nbevel + 1);
+          path.closed || (lineCap === LineCap.ROUND ? cverts += 2 * (2 * ncap + 2) : cverts += 12);
+        }
+        var renderData = _renderData = this.genRenderData(graphics, cverts), meshbuffer = renderData.meshbuffer, vData = meshbuffer._vData, iData = meshbuffer._iData;
+        for (var _i = _impl._pathOffset, _l = _impl._pathLength; _i < _l; _i++) {
+          var _path = paths[_i];
+          var pts = _path.points;
+          var _pointsLength = pts.length;
+          var offset = meshbuffer.vertexStart;
+          var p0 = void 0, p1 = void 0;
+          var start = void 0, end = void 0, loop = void 0;
+          loop = _path.closed;
+          if (loop) {
+            p0 = pts[_pointsLength - 1];
+            p1 = pts[0];
+            start = 0;
+            end = _pointsLength;
+          } else {
+            p0 = pts[0];
+            p1 = pts[1];
+            start = 1;
+            end = _pointsLength - 1;
+          }
+          if (!loop) {
+            var dPos = p1.sub(p0);
+            dPos.normalizeSelf();
+            var dx = dPos.x;
+            var dy = dPos.y;
+            lineCap === LineCap.BUTT ? this._buttCap(p0, dx, dy, w, 0) : lineCap === LineCap.SQUARE ? this._buttCap(p0, dx, dy, w, w) : lineCap === LineCap.ROUND && this._roundCapStart(p0, dx, dy, w, ncap);
+          }
+          for (var j = start; j < end; ++j) {
+            if (lineJoin === LineJoin.ROUND) this._roundJoin(p0, p1, w, w, ncap); else if (0 !== (p1.flags & (PointFlags.PT_BEVEL | PointFlags.PT_INNERBEVEL))) this._bevelJoin(p0, p1, w, w); else {
+              this._vset(p1.x + p1.dmx * w, p1.y + p1.dmy * w);
+              this._vset(p1.x - p1.dmx * w, p1.y - p1.dmy * w);
+            }
+            p0 = p1;
+            p1 = pts[j + 1];
+          }
+          if (loop) {
+            var vDataoOfset = 3 * offset;
+            this._vset(vData[vDataoOfset], vData[vDataoOfset + 1]);
+            this._vset(vData[vDataoOfset + 3], vData[vDataoOfset + 4]);
+          } else {
+            var _dPos = p1.sub(p0);
+            _dPos.normalizeSelf();
+            var _dx = _dPos.x;
+            var _dy = _dPos.y;
+            lineCap === LineCap.BUTT ? this._buttCap(p1, _dx, _dy, w, 0) : lineCap === LineCap.BUTT || lineCap === LineCap.SQUARE ? this._buttCap(p1, _dx, _dy, w, w) : lineCap === LineCap.ROUND && this._roundCapEnd(p1, _dx, _dy, w, ncap);
+          }
+          var indicesOffset = meshbuffer.indiceStart;
+          for (var _start = offset + 2, _end = meshbuffer.vertexStart; _start < _end; _start++) {
+            iData[indicesOffset++] = _start - 2;
+            iData[indicesOffset++] = _start - 1;
+            iData[indicesOffset++] = _start;
+          }
+          meshbuffer.indiceStart = indicesOffset;
+        }
+        _renderData = null;
+        _impl = null;
+      },
+      _expandFill: function(graphics) {
+        _impl = graphics._impl;
+        var paths = _impl._paths;
+        var cverts = 0;
+        for (var i = _impl._pathOffset, l = _impl._pathLength; i < l; i++) {
+          var path = paths[i];
+          var pointsLength = path.points.length;
+          cverts += pointsLength;
+        }
+        var renderData = _renderData = this.genRenderData(graphics, cverts), meshbuffer = renderData.meshbuffer, vData = meshbuffer._vData, iData = meshbuffer._iData;
+        for (var _i2 = _impl._pathOffset, _l2 = _impl._pathLength; _i2 < _l2; _i2++) {
+          var _path2 = paths[_i2];
+          var pts = _path2.points;
+          var _pointsLength2 = pts.length;
+          if (0 === _pointsLength2) continue;
+          var offset = meshbuffer.vertexStart;
+          for (var j = 0; j < _pointsLength2; ++j) this._vset(pts[j].x, pts[j].y);
+          var indicesOffset = meshbuffer.indiceStart;
+          if (_path2.complex) {
+            var earcutData = [];
+            for (var _j = offset, end = meshbuffer.vertexStart; _j < end; _j++) {
+              var vDataOffset = 3 * _j;
+              earcutData.push(vData[vDataOffset]);
+              earcutData.push(vData[vDataOffset + 1]);
+            }
+            var newIndices = Earcut(earcutData, null, 2);
+            if (!newIndices || 0 === newIndices.length) continue;
+            for (var _j2 = 0, nIndices = newIndices.length; _j2 < nIndices; _j2++) iData[indicesOffset++] = newIndices[_j2] + offset;
+          } else {
+            var first = offset;
+            for (var start = offset + 2, _end2 = meshbuffer.vertexStart; start < _end2; start++) {
+              iData[indicesOffset++] = first;
+              iData[indicesOffset++] = start - 1;
+              iData[indicesOffset++] = start;
+            }
+          }
+          meshbuffer.indiceStart = indicesOffset;
+        }
+        _renderData = null;
+        _impl = null;
+      },
+      _calculateJoins: function(impl, w, lineJoin, miterLimit) {
+        var iw = 0;
+        w > 0 && (iw = 1 / w);
+        var paths = impl._paths;
+        for (var i = impl._pathOffset, l = impl._pathLength; i < l; i++) {
+          var path = paths[i];
+          var pts = path.points;
+          var ptsLength = pts.length;
+          var p0 = pts[ptsLength - 1];
+          var p1 = pts[0];
+          var nleft = 0;
+          path.nbevel = 0;
+          for (var j = 0; j < ptsLength; j++) {
+            var dmr2 = void 0, cross = void 0, limit = void 0;
+            var dlx0 = p0.dy;
+            var dly0 = -p0.dx;
+            var dlx1 = p1.dy;
+            var dly1 = -p1.dx;
+            p1.dmx = .5 * (dlx0 + dlx1);
+            p1.dmy = .5 * (dly0 + dly1);
+            dmr2 = p1.dmx * p1.dmx + p1.dmy * p1.dmy;
+            if (dmr2 > 1e-6) {
+              var scale = 1 / dmr2;
+              scale > 600 && (scale = 600);
+              p1.dmx *= scale;
+              p1.dmy *= scale;
+            }
+            cross = p1.dx * p0.dy - p0.dx * p1.dy;
+            if (cross > 0) {
+              nleft++;
+              p1.flags |= PointFlags.PT_LEFT;
+            }
+            limit = max(11, min(p0.len, p1.len) * iw);
+            dmr2 * limit * limit < 1 && (p1.flags |= PointFlags.PT_INNERBEVEL);
+            p1.flags & PointFlags.PT_CORNER && (dmr2 * miterLimit * miterLimit < 1 || lineJoin === LineJoin.BEVEL || lineJoin === LineJoin.ROUND) && (p1.flags |= PointFlags.PT_BEVEL);
+            0 !== (p1.flags & (PointFlags.PT_BEVEL | PointFlags.PT_INNERBEVEL)) && path.nbevel++;
+            p0 = p1;
+            p1 = pts[j + 1];
+          }
+        }
+      },
+      _flattenPaths: function(impl) {
+        var paths = impl._paths;
+        for (var i = impl._pathOffset, l = impl._pathLength; i < l; i++) {
+          var path = paths[i];
+          var pts = path.points;
+          var p0 = pts[pts.length - 1];
+          var p1 = pts[0];
+          if (p0.equals(p1)) {
+            path.closed = true;
+            pts.pop();
+            p0 = pts[pts.length - 1];
+          }
+          for (var j = 0, size = pts.length; j < size; j++) {
+            var dPos = p1.sub(p0);
+            p0.len = dPos.mag();
+            (dPos.x || dPos.y) && dPos.normalizeSelf();
+            p0.dx = dPos.x;
+            p0.dy = dPos.y;
+            p0 = p1;
+            p1 = pts[j + 1];
+          }
+        }
+      },
+      _chooseBevel: function(bevel, p0, p1, w) {
+        var x = p1.x;
+        var y = p1.y;
+        var x0 = void 0, y0 = void 0, x1 = void 0, y1 = void 0;
+        if (0 !== bevel) {
+          x0 = x + p0.dy * w;
+          y0 = y - p0.dx * w;
+          x1 = x + p1.dy * w;
+          y1 = y - p1.dx * w;
+        } else {
+          x0 = x1 = x + p1.dmx * w;
+          y0 = y1 = y + p1.dmy * w;
+        }
+        return [ x0, y0, x1, y1 ];
+      },
+      _buttCap: function(p, dx, dy, w, d) {
+        var px = p.x - dx * d;
+        var py = p.y - dy * d;
+        var dlx = dy;
+        var dly = -dx;
+        this._vset(px + dlx * w, py + dly * w);
+        this._vset(px - dlx * w, py - dly * w);
+      },
+      _roundCapStart: function(p, dx, dy, w, ncap) {
+        var px = p.x;
+        var py = p.y;
+        var dlx = dy;
+        var dly = -dx;
+        for (var i = 0; i < ncap; i++) {
+          var a = i / (ncap - 1) * PI;
+          var ax = cos(a) * w, ay = sin(a) * w;
+          this._vset(px - dlx * ax - dx * ay, py - dly * ax - dy * ay);
+          this._vset(px, py);
+        }
+        this._vset(px + dlx * w, py + dly * w);
+        this._vset(px - dlx * w, py - dly * w);
+      },
+      _roundCapEnd: function(p, dx, dy, w, ncap) {
+        var px = p.x;
+        var py = p.y;
+        var dlx = dy;
+        var dly = -dx;
+        this._vset(px + dlx * w, py + dly * w);
+        this._vset(px - dlx * w, py - dly * w);
+        for (var i = 0; i < ncap; i++) {
+          var a = i / (ncap - 1) * PI;
+          var ax = cos(a) * w, ay = sin(a) * w;
+          this._vset(px, py);
+          this._vset(px - dlx * ax + dx * ay, py - dly * ax + dy * ay);
+        }
+      },
+      _roundJoin: function(p0, p1, lw, rw, ncap) {
+        var dlx0 = p0.dy;
+        var dly0 = -p0.dx;
+        var dlx1 = p1.dy;
+        var dly1 = -p1.dx;
+        var p1x = p1.x;
+        var p1y = p1.y;
+        if (0 !== (p1.flags & PointFlags.PT_LEFT)) {
+          var out = this._chooseBevel(p1.flags & PointFlags.PT_INNERBEVEL, p0, p1, lw);
+          var lx0 = out[0];
+          var ly0 = out[1];
+          var lx1 = out[2];
+          var ly1 = out[3];
+          var a0 = atan2(-dly0, -dlx0);
+          var a1 = atan2(-dly1, -dlx1);
+          a1 > a0 && (a1 -= 2 * PI);
+          this._vset(lx0, ly0);
+          this._vset(p1x - dlx0 * rw, p1.y - dly0 * rw);
+          var n = clamp(ceil((a0 - a1) / PI) * ncap, 2, ncap);
+          for (var i = 0; i < n; i++) {
+            var u = i / (n - 1);
+            var a = a0 + u * (a1 - a0);
+            var rx = p1x + cos(a) * rw;
+            var ry = p1y + sin(a) * rw;
+            this._vset(p1x, p1y);
+            this._vset(rx, ry);
+          }
+          this._vset(lx1, ly1);
+          this._vset(p1x - dlx1 * rw, p1y - dly1 * rw);
+        } else {
+          var _out = this._chooseBevel(p1.flags & PointFlags.PT_INNERBEVEL, p0, p1, -rw);
+          var rx0 = _out[0];
+          var ry0 = _out[1];
+          var rx1 = _out[2];
+          var ry1 = _out[3];
+          var _a = atan2(dly0, dlx0);
+          var _a2 = atan2(dly1, dlx1);
+          _a2 < _a && (_a2 += 2 * PI);
+          this._vset(p1x + dlx0 * rw, p1y + dly0 * rw);
+          this._vset(rx0, ry0);
+          var _n = clamp(ceil((_a2 - _a) / PI) * ncap, 2, ncap);
+          for (var _i3 = 0; _i3 < _n; _i3++) {
+            var _u = _i3 / (_n - 1);
+            var _a3 = _a + _u * (_a2 - _a);
+            var lx = p1x + cos(_a3) * lw;
+            var ly = p1y + sin(_a3) * lw;
+            this._vset(lx, ly);
+            this._vset(p1x, p1y);
+          }
+          this._vset(p1x + dlx1 * rw, p1y + dly1 * rw);
+          this._vset(rx1, ry1);
+        }
+      },
+      _bevelJoin: function(p0, p1, lw, rw) {
+        var rx0 = void 0, ry0 = void 0, rx1 = void 0, ry1 = void 0;
+        var lx0 = void 0, ly0 = void 0, lx1 = void 0, ly1 = void 0;
+        var dlx0 = p0.dy;
+        var dly0 = -p0.dx;
+        var dlx1 = p1.dy;
+        var dly1 = -p1.dx;
+        if (p1.flags & PointFlags.PT_LEFT) {
+          var out = this._chooseBevel(p1.flags & PointFlags.PT_INNERBEVEL, p0, p1, lw);
+          lx0 = out[0];
+          ly0 = out[1];
+          lx1 = out[2];
+          ly1 = out[3];
+          this._vset(lx0, ly0);
+          this._vset(p1.x - dlx0 * rw, p1.y - dly0 * rw);
+          this._vset(lx1, ly1);
+          this._vset(p1.x - dlx1 * rw, p1.y - dly1 * rw);
+        } else {
+          var _out2 = this._chooseBevel(p1.flags & PointFlags.PT_INNERBEVEL, p0, p1, -rw);
+          rx0 = _out2[0];
+          ry0 = _out2[1];
+          rx1 = _out2[2];
+          ry1 = _out2[3];
+          this._vset(p1.x + dlx0 * lw, p1.y + dly0 * lw);
+          this._vset(rx0, ry0);
+          this._vset(p1.x + dlx1 * lw, p1.y + dly1 * lw);
+          this._vset(rx1, ry1);
+        }
+      },
+      _vset: function(x, y) {
+        var meshbuffer = _renderData.meshbuffer;
+        var dataOffset = 3 * meshbuffer.vertexStart;
+        var vData = meshbuffer._vData;
+        var uintVData = meshbuffer._uintVData;
+        vData[dataOffset] = x;
+        vData[dataOffset + 1] = y;
+        uintVData[dataOffset + 2] = _curColor;
+        meshbuffer.vertexStart++;
+        meshbuffer._dirty = true;
+      }
+    };
+    Graphics._assembler = graphicsAssembler;
+    module.exports = graphicsAssembler;
+  }), {
+    "../../../../graphics/graphics": 87,
+    "../../../../graphics/types": 90,
+    "./earcut": 160,
+    "./impl": 161
+  } ],
+  163: [ (function(require, module, exports) {
     require("./sprite");
     require("./mask-assembler");
     require("./graphics");
     require("./label");
     require("./motion-streak");
   }), {
-    "./graphics": void 0,
-    "./label": 154,
-    "./mask-assembler": void 0,
-    "./motion-streak": 155,
-    "./sprite": 168
+    "./graphics": 162,
+    "./label": 168,
+    "./mask-assembler": 169,
+    "./motion-streak": 170,
+    "./sprite": 183
   } ],
-  150: [ (function(require, module, exports) {
+  164: [ (function(require, module, exports) {
     var js = require("../../../../../platform/js");
     var bmfontUtls = require("../../../../utils/label/bmfont");
     var fillVertices = require("../../utils").fillVertices;
@@ -32428,11 +35607,11 @@
       }
     }, bmfontUtls);
   }), {
-    "../../../../../platform/js": 126,
-    "../../../../utils/label/bmfont": 147,
-    "../../utils": 169
+    "../../../../../platform/js": 134,
+    "../../../../utils/label/bmfont": 158,
+    "../../utils": 184
   } ],
-  151: [ (function(require, module, exports) {
+  165: [ (function(require, module, exports) {
     var js = require("../../../../../platform/js");
     var ttfUtls = require("../../../../utils/label/ttf");
     var fillVertices = require("../../utils").fillVertices;
@@ -32472,11 +35651,11 @@
       }
     }, ttfUtls);
   }), {
-    "../../../../../platform/js": 126,
-    "../../../../utils/label/ttf": 148,
-    "../../utils": 169
+    "../../../../../platform/js": 134,
+    "../../../../utils/label/ttf": 159,
+    "../../utils": 184
   } ],
-  152: [ (function(require, module, exports) {
+  166: [ (function(require, module, exports) {
     var js = require("../../../../../platform/js");
     var assembler = require("../2d/bmfont");
     var fillVertices3D = require("../../utils").fillVertices3D;
@@ -32487,11 +35666,11 @@
       }
     }, assembler);
   }), {
-    "../../../../../platform/js": 126,
-    "../../utils": 169,
-    "../2d/bmfont": 150
+    "../../../../../platform/js": 134,
+    "../../utils": 184,
+    "../2d/bmfont": 164
   } ],
-  153: [ (function(require, module, exports) {
+  167: [ (function(require, module, exports) {
     var js = require("../../../../../platform/js");
     var assembler = require("../2d/ttf");
     var fillVertices3D = require("../../utils").fillVertices3D;
@@ -32502,11 +35681,11 @@
       }
     }, assembler);
   }), {
-    "../../../../../platform/js": 126,
-    "../../utils": 169,
-    "../2d/ttf": 151
+    "../../../../../platform/js": 134,
+    "../../utils": 184,
+    "../2d/ttf": 165
   } ],
-  154: [ (function(require, module, exports) {
+  168: [ (function(require, module, exports) {
     var Label = require("../../../../components/CCLabel");
     var ttfAssembler = require("./2d/ttf");
     var bmfontAssembler = require("./2d/bmfont");
@@ -32526,13 +35705,75 @@
     Label._assembler = labelAssembler;
     module.exports = labelAssembler;
   }), {
-    "../../../../components/CCLabel": 58,
-    "./2d/bmfont": 150,
-    "./2d/ttf": 151,
-    "./3d/bmfont": 152,
-    "./3d/ttf": 153
+    "../../../../components/CCLabel": 62,
+    "./2d/bmfont": 164,
+    "./2d/ttf": 165,
+    "./3d/bmfont": 166,
+    "./3d/ttf": 167
   } ],
-  155: [ (function(require, module, exports) {
+  169: [ (function(require, module, exports) {
+    var StencilManager = require("../stencil-manager");
+    var Mask = require("../../../components/CCMask");
+    var RenderFlow = require("../../render-flow");
+    var spriteAssembler = require("./sprite/2d/simple");
+    var graphicsAssembler = require("./graphics");
+    var _stencilMgr = StencilManager.sharedManager;
+    var maskFrontAssembler = {
+      updateRenderData: function(mask) {
+        if (!mask._renderData) {
+          graphicsAssembler.updateRenderData(mask._clearGraphics);
+          mask._type === Mask.Type.IMAGE_STENCIL ? mask._renderData = spriteAssembler.createData(mask) : mask._renderData = mask.requestRenderData();
+        }
+        var renderData = mask._renderData;
+        if (mask._type === Mask.Type.IMAGE_STENCIL) if (mask.spriteFrame) {
+          var size = mask.node._contentSize;
+          var anchor = mask.node._anchorPoint;
+          renderData.updateSizeNPivot(size.width, size.height, anchor.x, anchor.y);
+          renderData.dataLength = 4;
+          spriteAssembler.updateRenderData(mask);
+          renderData.material = mask._material;
+        } else mask._material = null; else {
+          mask._graphics._material = mask._material;
+          graphicsAssembler.updateRenderData(mask._graphics);
+        }
+      },
+      fillBuffers: function(mask, renderer) {
+        if (mask._type !== Mask.Type.IMAGE_STENCIL || mask.spriteFrame) {
+          _stencilMgr.pushMask(mask);
+          _stencilMgr.clear();
+          graphicsAssembler.fillBuffers(mask._clearGraphics, renderer);
+          _stencilMgr.enterLevel();
+          renderer.node = mask.node;
+          renderer.material = mask._material;
+          if (mask._type === Mask.Type.IMAGE_STENCIL) {
+            spriteAssembler.fillBuffers(mask, renderer);
+            renderer._flush();
+          } else graphicsAssembler.fillBuffers(mask._graphics, renderer);
+          _stencilMgr.enableMask();
+        }
+        mask.node._renderFlag |= RenderFlow.FLAG_UPDATE_RENDER_DATA;
+      }
+    };
+    var maskEndAssembler = {
+      fillBuffers: function(mask, renderer) {
+        (mask._type !== Mask.Type.IMAGE_STENCIL || mask.spriteFrame) && _stencilMgr.exitMask();
+        mask.node._renderFlag |= RenderFlow.FLAG_UPDATE_RENDER_DATA;
+      }
+    };
+    Mask._assembler = maskFrontAssembler;
+    Mask._postAssembler = maskEndAssembler;
+    module.exports = {
+      front: maskFrontAssembler,
+      end: maskEndAssembler
+    };
+  }), {
+    "../../../components/CCMask": 65,
+    "../../render-flow": 157,
+    "../stencil-manager": 188,
+    "./graphics": 162,
+    "./sprite/2d/simple": 174
+  } ],
+  170: [ (function(require, module, exports) {
     var MotionStreak = require("../../../components/CCMotionStreak");
     var RenderFlow = require("../../render-flow");
     function Point(point, dir) {
@@ -32680,10 +35921,10 @@
     };
     module.exports = MotionStreak._assembler = motionStreakAssembler;
   }), {
-    "../../../components/CCMotionStreak": 61,
-    "../../render-flow": 146
+    "../../../components/CCMotionStreak": 66,
+    "../../render-flow": 157
   } ],
-  156: [ (function(require, module, exports) {
+  171: [ (function(require, module, exports) {
     var Sprite = require("../../../../../components/CCSprite");
     var FillType = Sprite.FillType;
     var dynamicAtlasManager = require("../../../../utils/dynamic-atlas/manager");
@@ -32843,11 +36084,11 @@
       }
     };
   }), {
-    "../../../../../components/CCSprite": 66,
+    "../../../../../components/CCSprite": 71,
     "../../../../utils/dynamic-atlas/manager": void 0,
-    "../../utils": 169
+    "../../utils": 184
   } ],
-  157: [ (function(require, module, exports) {
+  172: [ (function(require, module, exports) {
     var dynamicAtlasManager = require("../../../../utils/dynamic-atlas/manager");
     var fillVerticesWithoutCalc = require("../../utils").fillVerticesWithoutCalc;
     module.exports = {
@@ -32933,9 +36174,9 @@
     };
   }), {
     "../../../../utils/dynamic-atlas/manager": void 0,
-    "../../utils": 169
+    "../../utils": 184
   } ],
-  158: [ (function(require, module, exports) {
+  173: [ (function(require, module, exports) {
     var dynamicAtlasManager = require("../../../../utils/dynamic-atlas/manager");
     var fillVertices = require("../../utils").fillVertices;
     var PI_2 = 2 * Math.PI;
@@ -33141,9 +36382,9 @@
     };
   }), {
     "../../../../utils/dynamic-atlas/manager": void 0,
-    "../../utils": 169
+    "../../utils": 184
   } ],
-  159: [ (function(require, module, exports) {
+  174: [ (function(require, module, exports) {
     var dynamicAtlasManager = require("../../../../utils/dynamic-atlas/manager");
     module.exports = {
       useModel: false,
@@ -33227,7 +36468,7 @@
   }), {
     "../../../../utils/dynamic-atlas/manager": void 0
   } ],
-  160: [ (function(require, module, exports) {
+  175: [ (function(require, module, exports) {
     var dynamicAtlasManager = require("../../../../utils/dynamic-atlas/manager");
     module.exports = {
       useModel: false,
@@ -33322,7 +36563,7 @@
   }), {
     "../../../../utils/dynamic-atlas/manager": void 0
   } ],
-  161: [ (function(require, module, exports) {
+  176: [ (function(require, module, exports) {
     var dynamicAtlasManager = require("../../../../utils/dynamic-atlas/manager");
     module.exports = {
       useModel: false,
@@ -33437,7 +36678,7 @@
   }), {
     "../../../../utils/dynamic-atlas/manager": void 0
   } ],
-  162: [ (function(require, module, exports) {
+  177: [ (function(require, module, exports) {
     var js = require("../../../../../platform/js");
     var assembler = require("../2d/bar-filled");
     var fillVerticesWithoutCalc3D = require("../../utils").fillVerticesWithoutCalc3D;
@@ -33467,11 +36708,11 @@
       }
     }, assembler);
   }), {
-    "../../../../../platform/js": 126,
-    "../../utils": 169,
-    "../2d/bar-filled": 156
+    "../../../../../platform/js": 134,
+    "../../utils": 184,
+    "../2d/bar-filled": 171
   } ],
-  163: [ (function(require, module, exports) {
+  178: [ (function(require, module, exports) {
     var js = require("../../../../../platform/js");
     var assembler = require("../2d/mesh");
     var fillVerticesWithoutCalc3D = require("../../utils").fillVerticesWithoutCalc3D;
@@ -33501,11 +36742,11 @@
       }
     }, assembler);
   }), {
-    "../../../../../platform/js": 126,
-    "../../utils": 169,
-    "../2d/mesh": 157
+    "../../../../../platform/js": 134,
+    "../../utils": 184,
+    "../2d/mesh": 172
   } ],
-  164: [ (function(require, module, exports) {
+  179: [ (function(require, module, exports) {
     var js = require("../../../../../platform/js");
     var assembler = require("../2d/radial-filled");
     var fillVertices3D = require("../../utils").fillVertices3D;
@@ -33519,11 +36760,11 @@
       }
     }, assembler);
   }), {
-    "../../../../../platform/js": 126,
-    "../../utils": 169,
-    "../2d/radial-filled": 158
+    "../../../../../platform/js": 134,
+    "../../utils": 184,
+    "../2d/radial-filled": 173
   } ],
-  165: [ (function(require, module, exports) {
+  180: [ (function(require, module, exports) {
     var js = require("../../../../../platform/js");
     var assembler = require("../2d/simple");
     var vec3 = cc.vmath.vec3;
@@ -33563,10 +36804,10 @@
       })()
     }, assembler);
   }), {
-    "../../../../../platform/js": 126,
-    "../2d/simple": 159
+    "../../../../../platform/js": 134,
+    "../2d/simple": 174
   } ],
-  166: [ (function(require, module, exports) {
+  181: [ (function(require, module, exports) {
     var js = require("../../../../../platform/js");
     var assembler = require("../2d/sliced");
     var vec3 = cc.vmath.vec3;
@@ -33614,10 +36855,10 @@
       }
     }, assembler);
   }), {
-    "../../../../../platform/js": 126,
-    "../2d/sliced": 160
+    "../../../../../platform/js": 134,
+    "../2d/sliced": 175
   } ],
-  167: [ (function(require, module, exports) {
+  182: [ (function(require, module, exports) {
     var js = require("../../../../../platform/js");
     var assembler = require("../2d/tiled");
     var vec3 = cc.vmath.vec3;
@@ -33655,10 +36896,10 @@
       })()
     }, assembler);
   }), {
-    "../../../../../platform/js": 126,
-    "../2d/tiled": 161
+    "../../../../../platform/js": 134,
+    "../2d/tiled": 176
   } ],
-  168: [ (function(require, module, exports) {
+  183: [ (function(require, module, exports) {
     var Sprite = require("../../../../components/CCSprite");
     var SpriteType = Sprite.Type;
     var FillType = Sprite.FillType;
@@ -33703,21 +36944,21 @@
     Sprite._assembler = spriteAssembler;
     module.exports = spriteAssembler;
   }), {
-    "../../../../components/CCSprite": 66,
-    "./2d/bar-filled": 156,
-    "./2d/mesh": 157,
-    "./2d/radial-filled": 158,
-    "./2d/simple": 159,
-    "./2d/sliced": 160,
-    "./2d/tiled": 161,
-    "./3d/bar-filled": 162,
-    "./3d/mesh": 163,
-    "./3d/radial-filled": 164,
-    "./3d/simple": 165,
-    "./3d/sliced": 166,
-    "./3d/tiled": 167
+    "../../../../components/CCSprite": 71,
+    "./2d/bar-filled": 171,
+    "./2d/mesh": 172,
+    "./2d/radial-filled": 173,
+    "./2d/simple": 174,
+    "./2d/sliced": 175,
+    "./2d/tiled": 176,
+    "./3d/bar-filled": 177,
+    "./3d/mesh": 178,
+    "./3d/radial-filled": 179,
+    "./3d/simple": 180,
+    "./3d/sliced": 181,
+    "./3d/tiled": 182
   } ],
-  169: [ (function(require, module, exports) {
+  184: [ (function(require, module, exports) {
     var vec3 = cc.vmath.vec3;
     var vec3_temp = vec3.create();
     function fillVertices(node, buffer, renderData, color) {
@@ -33790,7 +37031,7 @@
       fillVerticesWithoutCalc3D: fillVerticesWithoutCalc3D
     };
   }), {} ],
-  170: [ (function(require, module, exports) {
+  185: [ (function(require, module, exports) {
     var renderEngine = require("../render-engine");
     var gfx = renderEngine.gfx;
     var MeshBuffer = cc.Class({
@@ -33888,9 +37129,9 @@
     });
     cc.MeshBuffer = module.exports = MeshBuffer;
   }), {
-    "../render-engine": 145
+    "../render-engine": 156
   } ],
-  171: [ (function(require, module, exports) {
+  186: [ (function(require, module, exports) {
     var MeshBuffer = require("./mesh-buffer");
     var QuadBuffer = cc.Class({
       name: "cc.QuadBuffer",
@@ -33924,9 +37165,9 @@
     });
     cc.QuadBuffer = module.exports = QuadBuffer;
   }), {
-    "./mesh-buffer": 170
+    "./mesh-buffer": 185
   } ],
-  172: [ (function(require, module, exports) {
+  187: [ (function(require, module, exports) {
     var renderEngine = require("../render-engine");
     var vertexFormat = require("./vertex-format");
     var defaultVertexFormat = vertexFormat.vfmtPosUvColor;
@@ -34073,16 +37314,16 @@
     };
     module.exports = RenderComponentWalker;
   }), {
-    "../../platform/id-generater": 122,
-    "../render-engine": 145,
-    "../render-flow": 146,
+    "../../platform/id-generater": 130,
+    "../render-engine": 156,
+    "../render-flow": 157,
     "../utils/dynamic-atlas/manager": void 0,
-    "./mesh-buffer": 170,
-    "./quad-buffer": 171,
-    "./stencil-manager": 173,
-    "./vertex-format": 174
+    "./mesh-buffer": 185,
+    "./quad-buffer": 186,
+    "./stencil-manager": 188,
+    "./vertex-format": 189
   } ],
-  173: [ (function(require, module, exports) {
+  188: [ (function(require, module, exports) {
     var renderEngine = require("../render-engine");
     var gfx = renderEngine.gfx;
     var Stage = cc.Enum({
@@ -34183,9 +37424,9 @@
     StencilManager.Stage = Stage;
     module.exports = StencilManager;
   }), {
-    "../render-engine": 145
+    "../render-engine": 156
   } ],
-  174: [ (function(require, module, exports) {
+  189: [ (function(require, module, exports) {
     var renderEngine = require("../render-engine");
     var gfx = renderEngine.gfx;
     var vfmt3D = new gfx.VertexFormat([ {
@@ -34246,9 +37487,9 @@
       vfmtPosColor: vfmtPosColor
     };
   }), {
-    "../render-engine": 145
+    "../render-engine": 156
   } ],
-  175: [ (function(require, module, exports) {
+  190: [ (function(require, module, exports) {
     require("../platform/CCSys");
     var EXTNAME_RE = /(\.[^\.\/\?\\]*)(\?.*)?$/;
     var DIRNAME_RE = /((.*)(\/|\\|\\\\))?(.*?\..*$)?/;
@@ -34325,9 +37566,9 @@
     };
     module.exports = cc.path;
   }), {
-    "../platform/CCSys": 115
+    "../platform/CCSys": 123
   } ],
-  176: [ (function(require, module, exports) {
+  191: [ (function(require, module, exports) {
     var AffineTransform = function(a, b, c, d, tx, ty) {
       this.a = a;
       this.b = b;
@@ -34461,7 +37702,7 @@
     };
     cc.AffineTransform = module.exports = AffineTransform;
   }), {} ],
-  177: [ (function(require, module, exports) {
+  192: [ (function(require, module, exports) {
     var Flags = require("../platform/CCObject").Flags;
     var misc = require("./misc");
     var js = require("../platform/js");
@@ -34948,14 +38189,14 @@
     false;
     cc._BaseNode = module.exports = BaseNode;
   }), {
-    "../event-manager": 76,
-    "../platform/CCObject": 112,
-    "../platform/id-generater": 122,
-    "../platform/js": 126,
-    "../renderer/render-flow": 146,
-    "./misc": 183
+    "../event-manager": 81,
+    "../platform/CCObject": 120,
+    "../platform/id-generater": 130,
+    "../platform/js": 134,
+    "../renderer/render-flow": 157,
+    "./misc": 198
   } ],
-  178: [ (function(require, module, exports) {
+  193: [ (function(require, module, exports) {
     var EPSILON = 1e-6;
     function binarySearchEpsilon(array, value) {
       for (var l = 0, h = array.length - 1, m = h >>> 1; l <= h; m = l + h >>> 1) {
@@ -34971,7 +38212,7 @@
       binarySearchEpsilon: binarySearchEpsilon
     };
   }), {} ],
-  179: [ (function(require, module, exports) {
+  194: [ (function(require, module, exports) {
     var Base64Values = require("./misc").BASE64_VALUES;
     var HexChars = "0123456789abcdef".split("");
     var _t = [ "", "", "", "" ];
@@ -34994,9 +38235,9 @@
     };
     false;
   }), {
-    "./misc": 183
+    "./misc": 198
   } ],
-  180: [ (function(require, module, exports) {
+  195: [ (function(require, module, exports) {
     cc.find = module.exports = function(path, referenceNode) {
       if (null == path) {
         cc.errorID(5600);
@@ -35030,19 +38271,19 @@
       return match;
     };
   }), {} ],
-  181: [ (function(require, module, exports) {
+  196: [ (function(require, module, exports) {
     require("./CCPath");
     true;
     require("./profiler/CCProfiler");
     require("./find");
     require("./mutable-forward-iterator");
   }), {
-    "./CCPath": 175,
-    "./find": 180,
-    "./mutable-forward-iterator": 184,
-    "./profiler/CCProfiler": 186
+    "./CCPath": 190,
+    "./find": 195,
+    "./mutable-forward-iterator": 199,
+    "./profiler/CCProfiler": 201
   } ],
-  182: [ (function(require, module, exports) {
+  197: [ (function(require, module, exports) {
     var js = require("../platform/js");
     var renderEngine = require("../renderer/render-engine");
     var math = renderEngine.math;
@@ -35066,10 +38307,10 @@
       quat: quatPool
     };
   }), {
-    "../platform/js": 126,
-    "../renderer/render-engine": 145
+    "../platform/js": 134,
+    "../renderer/render-engine": 156
   } ],
-  183: [ (function(require, module, exports) {
+  198: [ (function(require, module, exports) {
     var js = require("../platform/js");
     var misc = {};
     misc.propertyDefine = function(ctor, sameNameGetSets, diffNameGetSets) {
@@ -35141,9 +38382,9 @@
     };
     cc.misc = module.exports = misc;
   }), {
-    "../platform/js": 126
+    "../platform/js": 134
   } ],
-  184: [ (function(require, module, exports) {
+  199: [ (function(require, module, exports) {
     function MutableForwardIterator(array) {
       this.i = 0;
       this.array = array;
@@ -35172,7 +38413,7 @@
     };
     module.exports = MutableForwardIterator;
   }), {} ],
-  185: [ (function(require, module, exports) {
+  200: [ (function(require, module, exports) {
     var math = require("../renderer").renderEngine.math;
     cc._PrefabInfo = cc.Class({
       name: "cc.PrefabInfo",
@@ -35228,9 +38469,9 @@
       }
     };
   }), {
-    "../renderer": 144
+    "../renderer": 155
   } ],
-  186: [ (function(require, module, exports) {
+  201: [ (function(require, module, exports) {
     var macro = require("../../platform/CCMacro");
     var PerfCounter = require("./perf-counter");
     var _showFPS = false;
@@ -35421,10 +38662,10 @@
       }
     };
   }), {
-    "../../platform/CCMacro": 111,
-    "./perf-counter": 188
+    "../../platform/CCMacro": 119,
+    "./perf-counter": 203
   } ],
-  187: [ (function(require, module, exports) {
+  202: [ (function(require, module, exports) {
     var Counter = cc.Class({
       name: "cc.Counter",
       ctor: function(id, opts, now) {
@@ -35473,7 +38714,7 @@
     });
     module.exports = Counter;
   }), {} ],
-  188: [ (function(require, module, exports) {
+  203: [ (function(require, module, exports) {
     var Counter = require("./counter");
     var PerfCounter = cc.Class({
       name: "cc.PerfCounter",
@@ -35507,9 +38748,9 @@
     });
     module.exports = PerfCounter;
   }), {
-    "./counter": 187
+    "./counter": 202
   } ],
-  189: [ (function(require, module, exports) {
+  204: [ (function(require, module, exports) {
     var textUtils = {
       label_wordRex: /([a-zA-Z0-9\xc4\xd6\xdc\xe4\xf6\xfc\xdf\xe9\xe8\xe7\xe0\xf9\xea\xe2\xee\xf4\xfb\u0430-\u044f\u0410-\u042f\u0401\u0451]+|\S)/,
       label_symbolRex: /^[!,.:;'}\]%\?>\u3001\u2018\u201c\u300b\uff1f\u3002\uff0c\uff01]/,
@@ -35600,7 +38841,7 @@
     };
     module.exports = textUtils;
   }), {} ],
-  190: [ (function(require, module, exports) {
+  205: [ (function(require, module, exports) {
     var Texture2D = require("../assets/CCTexture2D");
     var textureUtil = {
       loadImage: function(url, cb, target) {
@@ -35666,9 +38907,9 @@
     };
     cc.textureUtil = module.exports = textureUtil;
   }), {
-    "../assets/CCTexture2D": 46
+    "../assets/CCTexture2D": 50
   } ],
-  191: [ (function(require, module, exports) {
+  206: [ (function(require, module, exports) {
     var ValueType = require("./value-type");
     var js = require("../platform/js");
     var Color = (function() {
@@ -35892,11 +39133,11 @@
     };
     module.exports = cc.Color;
   }), {
-    "../platform/CCClass": 106,
-    "../platform/js": 126,
-    "./value-type": 197
+    "../platform/CCClass": 114,
+    "../platform/js": 134,
+    "./value-type": 212
   } ],
-  192: [ (function(require, module, exports) {
+  207: [ (function(require, module, exports) {
     require("./value-type");
     require("./vec2");
     require("./vec3");
@@ -35907,17 +39148,17 @@
     require("./color");
     cc.vmath = require("../renderer/render-engine").math;
   }), {
-    "../renderer/render-engine": 145,
-    "./color": 191,
-    "./mat4": 193,
-    "./quat": 194,
-    "./rect": 195,
-    "./size": 196,
-    "./value-type": 197,
-    "./vec2": 198,
-    "./vec3": 199
+    "../renderer/render-engine": 156,
+    "./color": 206,
+    "./mat4": 208,
+    "./quat": 209,
+    "./rect": 210,
+    "./size": 211,
+    "./value-type": 212,
+    "./vec2": 213,
+    "./vec3": 214
   } ],
-  193: [ (function(require, module, exports) {
+  208: [ (function(require, module, exports) {
     var ValueType = require("./value-type");
     var js = require("../platform/js");
     var CCClass = require("../platform/CCClass");
@@ -36066,12 +39307,12 @@
     };
     module.exports = cc.Mat4 = Mat4;
   }), {
-    "../platform/CCClass": 106,
-    "../platform/js": 126,
-    "../renderer/render-engine": 145,
-    "./value-type": 197
+    "../platform/CCClass": 114,
+    "../platform/js": 134,
+    "../renderer/render-engine": 156,
+    "./value-type": 212
   } ],
-  194: [ (function(require, module, exports) {
+  209: [ (function(require, module, exports) {
     var ValueType = require("./value-type");
     var js = require("../platform/js");
     var CCClass = require("../platform/CCClass");
@@ -36126,11 +39367,11 @@
     };
     module.exports = cc.Quat = Quat;
   }), {
-    "../platform/CCClass": 106,
-    "../platform/js": 126,
-    "./value-type": 197
+    "../platform/CCClass": 114,
+    "../platform/js": 134,
+    "./value-type": 212
   } ],
-  195: [ (function(require, module, exports) {
+  210: [ (function(require, module, exports) {
     var ValueType = require("./value-type");
     var js = require("../platform/js");
     function Rect(x, y, w, h) {
@@ -36284,11 +39525,11 @@
     };
     module.exports = cc.Rect;
   }), {
-    "../platform/CCClass": 106,
-    "../platform/js": 126,
-    "./value-type": 197
+    "../platform/CCClass": 114,
+    "../platform/js": 134,
+    "./value-type": 212
   } ],
-  196: [ (function(require, module, exports) {
+  211: [ (function(require, module, exports) {
     var ValueType = require("./value-type");
     var js = require("../platform/js");
     function Size(width, height) {
@@ -36334,11 +39575,11 @@
     };
     cc.Size = module.exports = Size;
   }), {
-    "../platform/CCClass": 106,
-    "../platform/js": 126,
-    "./value-type": 197
+    "../platform/CCClass": 114,
+    "../platform/js": 134,
+    "./value-type": 212
   } ],
-  197: [ (function(require, module, exports) {
+  212: [ (function(require, module, exports) {
     var js = require("../platform/js");
     function ValueType() {}
     js.setClassName("cc.ValueType", ValueType);
@@ -36349,9 +39590,9 @@
     };
     cc.ValueType = module.exports = ValueType;
   }), {
-    "../platform/js": 126
+    "../platform/js": 134
   } ],
-  198: [ (function(require, module, exports) {
+  213: [ (function(require, module, exports) {
     var ValueType = require("./value-type");
     var js = require("../platform/js");
     var CCClass = require("../platform/CCClass");
@@ -36552,13 +39793,13 @@
     cc.p = cc.v2;
     module.exports = cc.Vec2;
   }), {
-    "../platform/CCClass": 106,
-    "../platform/js": 126,
-    "../renderer/render-engine": 145,
-    "../utils/misc": 183,
-    "./value-type": 197
+    "../platform/CCClass": 114,
+    "../platform/js": 134,
+    "../renderer/render-engine": 156,
+    "../utils/misc": 198,
+    "./value-type": 212
   } ],
-  199: [ (function(require, module, exports) {
+  214: [ (function(require, module, exports) {
     var ValueType = require("./value-type");
     var js = require("../platform/js");
     var CCClass = require("../platform/CCClass");
@@ -36721,13 +39962,13 @@
     };
     module.exports = cc.Vec3 = Vec3;
   }), {
-    "../platform/CCClass": 106,
-    "../platform/js": 126,
-    "../renderer/render-engine": 145,
-    "../utils/misc": 183,
-    "./value-type": 197
+    "../platform/CCClass": 114,
+    "../platform/js": 134,
+    "../renderer/render-engine": 156,
+    "../utils/misc": 198,
+    "./value-type": 212
   } ],
-  200: [ (function(require, module, exports) {
+  215: [ (function(require, module, exports) {
     var js = cc.js;
     true;
     var ERR;
@@ -37143,14 +40384,303 @@
       "undefined" !== typeof dragonBones && js.obsolete(dragonBones.CCFactory, "dragonBones.CCFactory.getFactory", "getInstance");
     })();
   }), {} ],
-  201: [ (function(require, module, exports) {
+  216: [ (function(require, module, exports) {
     require("./core/CCGame");
     require("./actions");
   }), {
     "./actions": 8,
-    "./core/CCGame": 25
+    "./core/CCGame": 29
   } ],
-  202: [ (function(require, module, exports) {
+  217: [ (function(require, module, exports) {
+    var zlib = require("../compression/zlib.min");
+    var debug = require("../core/CCDebug");
+    var PNGReader = function(data) {
+      var chunkSize, colors, delayDen, delayNum, frame, i, index, key, section, ccshort, text, _i, _j, _ref;
+      this.data = data;
+      this.pos = 8;
+      this.palette = [];
+      this.imgData = [];
+      this.transparency = {};
+      this.animation = null;
+      this.text = {};
+      frame = null;
+      while (true) {
+        chunkSize = this.readUInt32();
+        section = function() {
+          var _i, _results;
+          _results = [];
+          for (i = _i = 0; _i < 4; i = ++_i) _results.push(String.fromCharCode(this.data[this.pos++]));
+          return _results;
+        }.call(this).join("");
+        switch (section) {
+         case "IHDR":
+          this.width = this.readUInt32();
+          this.height = this.readUInt32();
+          this.bits = this.data[this.pos++];
+          this.colorType = this.data[this.pos++];
+          this.compressionMethod = this.data[this.pos++];
+          this.filterMethod = this.data[this.pos++];
+          this.interlaceMethod = this.data[this.pos++];
+          break;
+
+         case "acTL":
+          this.animation = {
+            numFrames: this.readUInt32(),
+            numPlays: this.readUInt32() || Infinity,
+            frames: []
+          };
+          break;
+
+         case "PLTE":
+          this.palette = this.read(chunkSize);
+          break;
+
+         case "fcTL":
+          frame && this.animation.frames.push(frame);
+          this.pos += 4;
+          frame = {
+            width: this.readUInt32(),
+            height: this.readUInt32(),
+            xOffset: this.readUInt32(),
+            yOffset: this.readUInt32()
+          };
+          delayNum = this.readUInt16();
+          delayDen = this.readUInt16() || 100;
+          frame.delay = 1e3 * delayNum / delayDen;
+          frame.disposeOp = this.data[this.pos++];
+          frame.blendOp = this.data[this.pos++];
+          frame.data = [];
+          break;
+
+         case "IDAT":
+         case "fdAT":
+          if ("fdAT" === section) {
+            this.pos += 4;
+            chunkSize -= 4;
+          }
+          data = (null != frame ? frame.data : void 0) || this.imgData;
+          for (i = _i = 0; 0 <= chunkSize ? _i < chunkSize : _i > chunkSize; i = 0 <= chunkSize ? ++_i : --_i) data.push(this.data[this.pos++]);
+          break;
+
+         case "tRNS":
+          this.transparency = {};
+          switch (this.colorType) {
+           case 3:
+            this.transparency.indexed = this.read(chunkSize);
+            ccshort = 255 - this.transparency.indexed.length;
+            if (ccshort > 0) for (i = _j = 0; 0 <= ccshort ? _j < ccshort : _j > ccshort; i = 0 <= ccshort ? ++_j : --_j) this.transparency.indexed.push(255);
+            break;
+
+           case 0:
+            this.transparency.grayscale = this.read(chunkSize)[0];
+            break;
+
+           case 2:
+            this.transparency.rgb = this.read(chunkSize);
+          }
+          break;
+
+         case "tEXt":
+          text = this.read(chunkSize);
+          index = text.indexOf(0);
+          key = String.fromCharCode.apply(String, text.slice(0, index));
+          this.text[key] = String.fromCharCode.apply(String, text.slice(index + 1));
+          break;
+
+         case "IEND":
+          frame && this.animation.frames.push(frame);
+          this.colors = function() {
+            switch (this.colorType) {
+             case 0:
+             case 3:
+             case 4:
+              return 1;
+
+             case 2:
+             case 6:
+              return 3;
+            }
+          }.call(this);
+          this.hasAlphaChannel = 4 === (_ref = this.colorType) || 6 === _ref;
+          colors = this.colors + (this.hasAlphaChannel ? 1 : 0);
+          this.pixelBitlength = this.bits * colors;
+          this.colorSpace = function() {
+            switch (this.colors) {
+             case 1:
+              return "DeviceGray";
+
+             case 3:
+              return "DeviceRGB";
+            }
+          }.call(this);
+          Uint8Array != Array && (this.imgData = new Uint8Array(this.imgData));
+          return;
+
+         default:
+          this.pos += chunkSize;
+        }
+        this.pos += 4;
+        if (this.pos > this.data.length) throw new Error(debug.getError(6017));
+      }
+    };
+    PNGReader.prototype = {
+      constructor: PNGReader,
+      read: function(bytes) {
+        var i, _i, _results;
+        _results = [];
+        for (i = _i = 0; 0 <= bytes ? _i < bytes : _i > bytes; i = 0 <= bytes ? ++_i : --_i) _results.push(this.data[this.pos++]);
+        return _results;
+      },
+      readUInt32: function() {
+        var b1, b2, b3, b4;
+        b1 = this.data[this.pos++] << 24;
+        b2 = this.data[this.pos++] << 16;
+        b3 = this.data[this.pos++] << 8;
+        b4 = this.data[this.pos++];
+        return b1 | b2 | b3 | b4;
+      },
+      readUInt16: function() {
+        var b1, b2;
+        b1 = this.data[this.pos++] << 8;
+        b2 = this.data[this.pos++];
+        return b1 | b2;
+      },
+      decodePixels: function(data) {
+        var ccbyte, c, col, i, left, length, p, pa, paeth, pb, pc, pixelBytes, pixels, pos, row, scanlineLength, upper, upperLeft, _i, _j, _k, _l, _m;
+        null == data && (data = this.imgData);
+        if (0 === data.length) return new Uint8Array(0);
+        var inflate = new zlib.Inflate(data, {
+          index: 0,
+          verify: false
+        });
+        data = inflate.decompress();
+        pixelBytes = this.pixelBitlength / 8;
+        scanlineLength = pixelBytes * this.width;
+        pixels = new Uint8Array(scanlineLength * this.height);
+        length = data.length;
+        row = 0;
+        pos = 0;
+        c = 0;
+        while (pos < length) {
+          switch (data[pos++]) {
+           case 0:
+            for (i = _i = 0; _i < scanlineLength; i = _i += 1) pixels[c++] = data[pos++];
+            break;
+
+           case 1:
+            for (i = _j = 0; _j < scanlineLength; i = _j += 1) {
+              ccbyte = data[pos++];
+              left = i < pixelBytes ? 0 : pixels[c - pixelBytes];
+              pixels[c++] = (ccbyte + left) % 256;
+            }
+            break;
+
+           case 2:
+            for (i = _k = 0; _k < scanlineLength; i = _k += 1) {
+              ccbyte = data[pos++];
+              col = (i - i % pixelBytes) / pixelBytes;
+              upper = row && pixels[(row - 1) * scanlineLength + col * pixelBytes + i % pixelBytes];
+              pixels[c++] = (upper + ccbyte) % 256;
+            }
+            break;
+
+           case 3:
+            for (i = _l = 0; _l < scanlineLength; i = _l += 1) {
+              ccbyte = data[pos++];
+              col = (i - i % pixelBytes) / pixelBytes;
+              left = i < pixelBytes ? 0 : pixels[c - pixelBytes];
+              upper = row && pixels[(row - 1) * scanlineLength + col * pixelBytes + i % pixelBytes];
+              pixels[c++] = (ccbyte + Math.floor((left + upper) / 2)) % 256;
+            }
+            break;
+
+           case 4:
+            for (i = _m = 0; _m < scanlineLength; i = _m += 1) {
+              ccbyte = data[pos++];
+              col = (i - i % pixelBytes) / pixelBytes;
+              left = i < pixelBytes ? 0 : pixels[c - pixelBytes];
+              if (0 === row) upper = upperLeft = 0; else {
+                upper = pixels[(row - 1) * scanlineLength + col * pixelBytes + i % pixelBytes];
+                upperLeft = col && pixels[(row - 1) * scanlineLength + (col - 1) * pixelBytes + i % pixelBytes];
+              }
+              p = left + upper - upperLeft;
+              pa = Math.abs(p - left);
+              pb = Math.abs(p - upper);
+              pc = Math.abs(p - upperLeft);
+              paeth = pa <= pb && pa <= pc ? left : pb <= pc ? upper : upperLeft;
+              pixels[c++] = (ccbyte + paeth) % 256;
+            }
+            break;
+
+           default:
+            throw new Error(debug.getError(6018, data[pos - 1]));
+          }
+          row++;
+        }
+        return pixels;
+      },
+      copyToImageData: function(imageData, pixels) {
+        var alpha, colors, data, i, input, j, k, length, palette, v, _ref;
+        colors = this.colors;
+        palette = null;
+        alpha = this.hasAlphaChannel;
+        if (this.palette.length) {
+          palette = null != (_ref = this._decodedPalette) ? _ref : this._decodedPalette = this.decodePalette();
+          colors = 4;
+          alpha = true;
+        }
+        data = imageData.data || imageData;
+        length = data.length;
+        input = palette || pixels;
+        i = j = 0;
+        if (1 === colors) while (i < length) {
+          k = palette ? 4 * pixels[i / 4] : j;
+          v = input[k++];
+          data[i++] = v;
+          data[i++] = v;
+          data[i++] = v;
+          data[i++] = alpha ? input[k++] : 255;
+          j = k;
+        } else while (i < length) {
+          k = palette ? 4 * pixels[i / 4] : j;
+          data[i++] = input[k++];
+          data[i++] = input[k++];
+          data[i++] = input[k++];
+          data[i++] = alpha ? input[k++] : 255;
+          j = k;
+        }
+      },
+      decodePalette: function() {
+        var c, i, palette, pos, ret, transparency, _i, _ref, _ref1;
+        palette = this.palette;
+        transparency = this.transparency.indexed || [];
+        ret = new Uint8Array((transparency.length || 0) + palette.length);
+        pos = 0;
+        c = 0;
+        for (i = _i = 0, _ref = palette.length; _i < _ref; i = _i += 3) {
+          ret[pos++] = palette[i];
+          ret[pos++] = palette[i + 1];
+          ret[pos++] = palette[i + 2];
+          ret[pos++] = null != (_ref1 = transparency[c++]) ? _ref1 : 255;
+        }
+        return ret;
+      },
+      render: function(canvas) {
+        var ctx, data;
+        canvas.width = this.width;
+        canvas.height = this.height;
+        ctx = canvas.getContext("2d");
+        data = ctx.createImageData(this.width, this.height);
+        this.copyToImageData(data, this.decodePixels());
+        return ctx.putImageData(data, 0, 0);
+      }
+    };
+    module.exports = PNGReader;
+  }), {
+    "../compression/zlib.min": 25,
+    "../core/CCDebug": 27
+  } ],
+  218: [ (function(require, module, exports) {
     var Asset = require("../core/assets/CCAsset");
     var CCSpriteFrame = require("../core/assets/CCSpriteFrame");
     var ParticleAsset = cc.Class({
@@ -37165,10 +40695,1217 @@
     });
     cc.ParticleAsset = module.exports = ParticleAsset;
   }), {
-    "../core/assets/CCAsset": 30,
-    "../core/assets/CCSpriteFrame": 43
+    "../core/assets/CCAsset": 34,
+    "../core/assets/CCSpriteFrame": 47
   } ],
-  203: [ (function(require, module, exports) {
+  219: [ (function(require, module, exports) {
+    var macro = require("../core/platform/CCMacro");
+    var ParticleAsset = require("./CCParticleAsset");
+    var RenderComponent = require("../core/components/CCRenderComponent");
+    var codec = require("../compression/ZipUtils");
+    var PNGReader = require("./CCPNGReader");
+    var tiffReader = require("./CCTIFFReader");
+    var textureUtil = require("../core/utils/texture-util");
+    var renderEngine = require("../core/renderer/render-engine");
+    var RenderFlow = require("../core/renderer/render-flow");
+    var ParticleSimulator = require("./particle-simulator");
+    function getImageFormatByData(imgData) {
+      if (imgData.length > 8 && 137 === imgData[0] && 80 === imgData[1] && 78 === imgData[2] && 71 === imgData[3] && 13 === imgData[4] && 10 === imgData[5] && 26 === imgData[6] && 10 === imgData[7]) return macro.ImageFormat.PNG;
+      if (imgData.length > 2 && (73 === imgData[0] && 73 === imgData[1] || 77 === imgData[0] && 77 === imgData[1] || 255 === imgData[0] && 216 === imgData[1])) return macro.ImageFormat.TIFF;
+      return macro.ImageFormat.UNKNOWN;
+    }
+    var EmitterMode = cc.Enum({
+      GRAVITY: 0,
+      RADIUS: 1
+    });
+    var PositionType = cc.Enum({
+      FREE: 0,
+      RELATIVE: 1,
+      GROUPED: 2
+    });
+    var properties = {
+      preview: {
+        default: true,
+        editorOnly: true,
+        notify: false,
+        animatable: false,
+        tooltip: false
+      },
+      _custom: false,
+      custom: {
+        get: function() {
+          return this._custom;
+        },
+        set: function(value) {
+          false;
+          if (this._custom !== value) {
+            this._custom = value;
+            value || this._applyFile();
+            false;
+          }
+        },
+        animatable: false,
+        tooltip: false
+      },
+      _file: {
+        default: null,
+        type: ParticleAsset
+      },
+      file: {
+        get: function() {
+          return this._file;
+        },
+        set: function(value, force) {
+          if (this._file !== value || false) {
+            this._file = value;
+            if (value) {
+              this._applyFile();
+              false;
+            } else this.custom = true;
+          }
+        },
+        animatable: false,
+        type: ParticleAsset,
+        tooltip: false
+      },
+      _spriteFrame: {
+        default: null,
+        type: cc.SpriteFrame
+      },
+      spriteFrame: {
+        get: function() {
+          return this._spriteFrame;
+        },
+        set: function(value, force) {
+          var lastSprite = this._renderSpriteFrame;
+          false;
+          if (lastSprite === value) return;
+          this._renderSpriteFrame = value;
+          value && !value._uuid || (this._spriteFrame = value);
+          if ((lastSprite && lastSprite.getTexture()) !== (value && value.getTexture())) {
+            this._texture = null;
+            this._applySpriteFrame(lastSprite);
+          }
+          false;
+        },
+        type: cc.SpriteFrame,
+        tooltip: false
+      },
+      texture: {
+        get: function() {
+          return this._texture;
+        },
+        set: function(value) {
+          value && cc.warnID(6017);
+        },
+        type: cc.Texture2D,
+        tooltip: false,
+        readonly: true,
+        visible: false,
+        animatable: false
+      },
+      particleCount: {
+        visible: false,
+        get: function() {
+          return this._simulator.particles.length;
+        },
+        readonly: true
+      },
+      _stopped: true,
+      stopped: {
+        get: function() {
+          return this._stopped;
+        },
+        animatable: false,
+        visible: false
+      },
+      playOnLoad: true,
+      autoRemoveOnFinish: {
+        default: false,
+        animatable: false,
+        tooltip: false
+      },
+      active: {
+        get: function() {
+          return this._simulator.active;
+        },
+        visible: false
+      },
+      totalParticles: 150,
+      duration: -1,
+      emissionRate: 10,
+      life: 1,
+      lifeVar: 0,
+      _startColor: null,
+      startColor: {
+        type: cc.Color,
+        get: function() {
+          return this._startColor;
+        },
+        set: function(val) {
+          this._startColor.r = val.r;
+          this._startColor.g = val.g;
+          this._startColor.b = val.b;
+          this._startColor.a = val.a;
+        }
+      },
+      _startColorVar: null,
+      startColorVar: {
+        type: cc.Color,
+        get: function() {
+          return this._startColorVar;
+        },
+        set: function(val) {
+          this._startColorVar.r = val.r;
+          this._startColorVar.g = val.g;
+          this._startColorVar.b = val.b;
+          this._startColorVar.a = val.a;
+        }
+      },
+      _endColor: null,
+      endColor: {
+        type: cc.Color,
+        get: function() {
+          return this._endColor;
+        },
+        set: function(val) {
+          this._endColor.r = val.r;
+          this._endColor.g = val.g;
+          this._endColor.b = val.b;
+          this._endColor.a = val.a;
+        }
+      },
+      _endColorVar: null,
+      endColorVar: {
+        type: cc.Color,
+        get: function() {
+          return this._endColorVar;
+        },
+        set: function(val) {
+          this._endColorVar.r = val.r;
+          this._endColorVar.g = val.g;
+          this._endColorVar.b = val.b;
+          this._endColorVar.a = val.a;
+        }
+      },
+      angle: 90,
+      angleVar: 20,
+      startSize: 50,
+      startSizeVar: 0,
+      endSize: 0,
+      endSizeVar: 0,
+      startSpin: 0,
+      startSpinVar: 0,
+      endSpin: 0,
+      endSpinVar: 0,
+      sourcePos: cc.v2(0, 0),
+      posVar: cc.v2(0, 0),
+      positionType: {
+        default: PositionType.FREE,
+        type: PositionType
+      },
+      emitterMode: {
+        default: EmitterMode.GRAVITY,
+        type: EmitterMode
+      },
+      gravity: cc.v2(0, 0),
+      speed: 180,
+      speedVar: 50,
+      tangentialAccel: 80,
+      tangentialAccelVar: 0,
+      radialAccel: 0,
+      radialAccelVar: 0,
+      rotationIsDir: false,
+      startRadius: 0,
+      startRadiusVar: 0,
+      endRadius: 0,
+      endRadiusVar: 0,
+      rotatePerS: 0,
+      rotatePerSVar: 0
+    };
+    var ParticleSystem = cc.Class({
+      name: "cc.ParticleSystem",
+      extends: RenderComponent,
+      editor: false,
+      ctor: function() {
+        this._previewTimer = null;
+        this._focused = false;
+        this._texture = null;
+        this._simulator = new ParticleSimulator(this);
+        this._startColor = cc.color(255, 255, 255, 255);
+        this._startColorVar = cc.color(0, 0, 0, 0);
+        this._endColor = cc.color(255, 255, 255, 0);
+        this._endColorVar = cc.color(0, 0, 0, 0);
+        this._renderSpriteFrame = null;
+      },
+      properties: properties,
+      statics: {
+        DURATION_INFINITY: -1,
+        START_SIZE_EQUAL_TO_END_SIZE: -1,
+        START_RADIUS_EQUAL_TO_END_RADIUS: -1,
+        EmitterMode: EmitterMode,
+        PositionType: PositionType,
+        _PNGReader: PNGReader,
+        _TIFFReader: tiffReader
+      },
+      onFocusInEditor: false,
+      onLostFocusInEditor: false,
+      __preload: function() {
+        if (this._file) if (this._custom) {
+          var missCustomTexture = !this._texture;
+          missCustomTexture && this._applyFile();
+        } else this._applyFile(); else this._custom && this.spriteFrame && !this._renderSpriteFrame && this._applySpriteFrame(this.spriteFrame);
+        true;
+        this.playOnLoad && this.resetSystem();
+        false;
+      },
+      onLoad: function() {
+        this._ia || ParticleSystem._assembler.createIA(this);
+      },
+      onEnable: function() {
+        this._super();
+        this.node._renderFlag &= ~RenderFlow.FLAG_RENDER;
+        this._activateMaterial();
+      },
+      onDestroy: function() {
+        this.autoRemoveOnFinish && (this.autoRemoveOnFinish = false);
+        this._super();
+      },
+      update: function(dt) {
+        !this._simulator.finished && this._material && this._simulator.step(dt);
+      },
+      addParticle: function() {},
+      stopSystem: function() {
+        this._stopped = true;
+        this._simulator.stop();
+      },
+      resetSystem: function() {
+        this._stopped = false;
+        this._simulator.reset();
+        this._activateMaterial();
+      },
+      isFull: function() {
+        return this.particleCount >= this.totalParticles;
+      },
+      setTextureWithRect: function(texture, rect) {
+        texture instanceof cc.Texture2D && (this.spriteFrame = new cc.SpriteFrame(texture, rect));
+      },
+      _applyFile: function() {
+        var file = this._file;
+        if (file) {
+          var self = this;
+          cc.loader.load(file.nativeUrl, (function(err, content) {
+            if (err || !content) {
+              cc.errorID(6029);
+              return;
+            }
+            if (!self.isValid) return;
+            self._plistFile = file.nativeUrl;
+            self._custom || self._initWithDictionary(content);
+            self.spriteFrame && self._renderSpriteFrame || (file.spriteFrame ? self.spriteFrame = file.spriteFrame : self._custom && self._initTextureWithDictionary(content));
+          }));
+        }
+      },
+      _initTextureWithDictionary: function(dict) {
+        var imgPath = cc.path.changeBasename(this._plistFile, dict["textureFileName"] || "");
+        if (dict["textureFileName"]) textureUtil.loadImage(imgPath, (function(error, texture) {
+          if (error) {
+            dict["textureFileName"] = void 0;
+            this._initTextureWithDictionary(dict);
+          } else this.spriteFrame = new cc.SpriteFrame(texture);
+        }), this); else if (dict["textureImageData"]) {
+          var textureData = dict["textureImageData"];
+          if (!(textureData && textureData.length > 0)) return false;
+          var buffer = codec.unzipBase64AsArray(textureData, 1);
+          if (!buffer) {
+            cc.logID(6030);
+            return false;
+          }
+          var imageFormat = getImageFormatByData(buffer);
+          if (imageFormat !== macro.ImageFormat.TIFF && imageFormat !== macro.ImageFormat.PNG) {
+            cc.logID(6031);
+            return false;
+          }
+          var canvasObj = document.createElement("canvas");
+          if (imageFormat === macro.ImageFormat.PNG) {
+            var myPngObj = new PNGReader(buffer);
+            myPngObj.render(canvasObj);
+          } else tiffReader.parseTIFF(buffer, canvasObj);
+          var tex = textureUtil.cacheImage(imgPath, canvasObj);
+          tex || cc.logID(6032);
+          this.spriteFrame = new cc.SpriteFrame(tex);
+        }
+        return true;
+      },
+      _initWithDictionary: function(dict) {
+        this.totalParticles = parseInt(dict["maxParticles"] || 0);
+        this.life = parseFloat(dict["particleLifespan"] || 0);
+        this.lifeVar = parseFloat(dict["particleLifespanVariance"] || 0);
+        this.emissionRate = Math.min(this.totalParticles / this.life, Number.MAX_VALUE);
+        this.duration = parseFloat(dict["duration"] || 0);
+        this.srcBlendFactor = parseInt(dict["blendFuncSource"] || macro.SRC_ALPHA);
+        this.dstBlendFactor = parseInt(dict["blendFuncDestination"] || macro.ONE_MINUS_SRC_ALPHA);
+        var locStartColor = this._startColor;
+        locStartColor.r = 255 * parseFloat(dict["startColorRed"] || 0);
+        locStartColor.g = 255 * parseFloat(dict["startColorGreen"] || 0);
+        locStartColor.b = 255 * parseFloat(dict["startColorBlue"] || 0);
+        locStartColor.a = 255 * parseFloat(dict["startColorAlpha"] || 0);
+        var locStartColorVar = this._startColorVar;
+        locStartColorVar.r = 255 * parseFloat(dict["startColorVarianceRed"] || 0);
+        locStartColorVar.g = 255 * parseFloat(dict["startColorVarianceGreen"] || 0);
+        locStartColorVar.b = 255 * parseFloat(dict["startColorVarianceBlue"] || 0);
+        locStartColorVar.a = 255 * parseFloat(dict["startColorVarianceAlpha"] || 0);
+        var locEndColor = this._endColor;
+        locEndColor.r = 255 * parseFloat(dict["finishColorRed"] || 0);
+        locEndColor.g = 255 * parseFloat(dict["finishColorGreen"] || 0);
+        locEndColor.b = 255 * parseFloat(dict["finishColorBlue"] || 0);
+        locEndColor.a = 255 * parseFloat(dict["finishColorAlpha"] || 0);
+        var locEndColorVar = this._endColorVar;
+        locEndColorVar.r = 255 * parseFloat(dict["finishColorVarianceRed"] || 0);
+        locEndColorVar.g = 255 * parseFloat(dict["finishColorVarianceGreen"] || 0);
+        locEndColorVar.b = 255 * parseFloat(dict["finishColorVarianceBlue"] || 0);
+        locEndColorVar.a = 255 * parseFloat(dict["finishColorVarianceAlpha"] || 0);
+        this.startSize = parseFloat(dict["startParticleSize"] || 0);
+        this.startSizeVar = parseFloat(dict["startParticleSizeVariance"] || 0);
+        this.endSize = parseFloat(dict["finishParticleSize"] || 0);
+        this.endSizeVar = parseFloat(dict["finishParticleSizeVariance"] || 0);
+        this.sourcePos.x = 0;
+        this.sourcePos.y = 0;
+        this.posVar.x = parseFloat(dict["sourcePositionVariancex"] || 0);
+        this.posVar.y = parseFloat(dict["sourcePositionVariancey"] || 0);
+        this.angle = parseFloat(dict["angle"] || 0);
+        this.angleVar = parseFloat(dict["angleVariance"] || 0);
+        this.startSpin = parseFloat(dict["rotationStart"] || 0);
+        this.startSpinVar = parseFloat(dict["rotationStartVariance"] || 0);
+        this.endSpin = parseFloat(dict["rotationEnd"] || 0);
+        this.endSpinVar = parseFloat(dict["rotationEndVariance"] || 0);
+        this.emitterMode = parseInt(dict["emitterType"] || EmitterMode.GRAVITY);
+        if (this.emitterMode === EmitterMode.GRAVITY) {
+          this.gravity.x = parseFloat(dict["gravityx"] || 0);
+          this.gravity.y = parseFloat(dict["gravityy"] || 0);
+          this.speed = parseFloat(dict["speed"] || 0);
+          this.speedVar = parseFloat(dict["speedVariance"] || 0);
+          this.radialAccel = parseFloat(dict["radialAcceleration"] || 0);
+          this.radialAccelVar = parseFloat(dict["radialAccelVariance"] || 0);
+          this.tangentialAccel = parseFloat(dict["tangentialAcceleration"] || 0);
+          this.tangentialAccelVar = parseFloat(dict["tangentialAccelVariance"] || 0);
+          var locRotationIsDir = dict["rotationIsDir"] || "";
+          if (null !== locRotationIsDir) {
+            locRotationIsDir = locRotationIsDir.toString().toLowerCase();
+            this.rotationIsDir = "true" === locRotationIsDir || "1" === locRotationIsDir;
+          } else this.rotationIsDir = false;
+        } else {
+          if (this.emitterMode !== EmitterMode.RADIUS) {
+            cc.warnID(6009);
+            return false;
+          }
+          this.startRadius = parseFloat(dict["maxRadius"] || 0);
+          this.startRadiusVar = parseFloat(dict["maxRadiusVariance"] || 0);
+          this.endRadius = parseFloat(dict["minRadius"] || 0);
+          this.endRadiusVar = parseFloat(dict["minRadiusVariance"] || 0);
+          this.rotatePerS = parseFloat(dict["rotatePerSecond"] || 0);
+          this.rotatePerSVar = parseFloat(dict["rotatePerSecondVariance"] || 0);
+        }
+        this._initTextureWithDictionary(dict);
+        return true;
+      },
+      _onTextureLoaded: function() {
+        this._texture = this._renderSpriteFrame.getTexture();
+        this._simulator.updateUVs(true);
+        this._activateMaterial();
+      },
+      _applySpriteFrame: function(oldFrame) {
+        oldFrame && oldFrame.off && oldFrame.off("load", this._onTextureLoaded, this);
+        var spriteFrame = this._renderSpriteFrame = this._renderSpriteFrame || this._spriteFrame;
+        if (spriteFrame) if (spriteFrame.textureLoaded()) this._onTextureLoaded(null); else {
+          spriteFrame.once("load", this._onTextureLoaded, this);
+          spriteFrame.ensureLoadTexture();
+        }
+      },
+      _activateMaterial: function() {
+        if (!this._material) {
+          this._material = new renderEngine.SpriteMaterial();
+          this._material.useTexture = true;
+          this._material.useModel = true;
+          this._material.useColor = false;
+        }
+        if (this._texture && this._texture.loaded) {
+          this.markForUpdateRenderData(true);
+          this.markForCustomIARender(true);
+          this._material.texture = this._texture;
+          this._updateMaterial(this._material);
+        } else {
+          this.markForCustomIARender(false);
+          this._renderSpriteFrame && this._applySpriteFrame();
+        }
+      },
+      _finishedSimulation: function() {
+        false;
+        this.disableRender();
+        this.autoRemoveOnFinish && this._stopped && this.node.destroy();
+      }
+    });
+    cc.ParticleSystem = module.exports = ParticleSystem;
+  }), {
+    "../compression/ZipUtils": 22,
+    "../core/components/CCRenderComponent": 68,
+    "../core/platform/CCMacro": 119,
+    "../core/renderer/render-engine": 156,
+    "../core/renderer/render-flow": 157,
+    "../core/utils/texture-util": 205,
+    "./CCPNGReader": 217,
+    "./CCParticleAsset": 218,
+    "./CCTIFFReader": 220,
+    "./particle-simulator": 222
+  } ],
+  220: [ (function(require, module, exports) {
+    var debug = require("../core/CCDebug");
+    var tiffReader = {
+      _littleEndian: false,
+      _tiffData: null,
+      _fileDirectories: [],
+      getUint8: function(offset) {
+        return this._tiffData[offset];
+      },
+      getUint16: function(offset) {
+        return this._littleEndian ? this._tiffData[offset + 1] << 8 | this._tiffData[offset] : this._tiffData[offset] << 8 | this._tiffData[offset + 1];
+      },
+      getUint32: function(offset) {
+        var a = this._tiffData;
+        return this._littleEndian ? a[offset + 3] << 24 | a[offset + 2] << 16 | a[offset + 1] << 8 | a[offset] : a[offset] << 24 | a[offset + 1] << 16 | a[offset + 2] << 8 | a[offset + 3];
+      },
+      checkLittleEndian: function() {
+        var BOM = this.getUint16(0);
+        if (18761 === BOM) this.littleEndian = true; else {
+          if (19789 !== BOM) {
+            console.log(BOM);
+            throw TypeError(debug.getError(6019));
+          }
+          this.littleEndian = false;
+        }
+        return this.littleEndian;
+      },
+      hasTowel: function() {
+        if (42 !== this.getUint16(2)) throw RangeError(debug.getError(6020));
+        return true;
+      },
+      getFieldTypeName: function(fieldType) {
+        var typeNames = this.fieldTypeNames;
+        if (fieldType in typeNames) return typeNames[fieldType];
+        return null;
+      },
+      getFieldTagName: function(fieldTag) {
+        var tagNames = this.fieldTagNames;
+        if (fieldTag in tagNames) return tagNames[fieldTag];
+        cc.logID(6021, fieldTag);
+        return "Tag" + fieldTag;
+      },
+      getFieldTypeLength: function(fieldTypeName) {
+        if (-1 !== [ "BYTE", "ASCII", "SBYTE", "UNDEFINED" ].indexOf(fieldTypeName)) return 1;
+        if (-1 !== [ "SHORT", "SSHORT" ].indexOf(fieldTypeName)) return 2;
+        if (-1 !== [ "LONG", "SLONG", "FLOAT" ].indexOf(fieldTypeName)) return 4;
+        if (-1 !== [ "RATIONAL", "SRATIONAL", "DOUBLE" ].indexOf(fieldTypeName)) return 8;
+        return null;
+      },
+      getFieldValues: function(fieldTagName, fieldTypeName, typeCount, valueOffset) {
+        var fieldValues = [];
+        var fieldTypeLength = this.getFieldTypeLength(fieldTypeName);
+        var fieldValueSize = fieldTypeLength * typeCount;
+        if (fieldValueSize <= 4) false === this.littleEndian ? fieldValues.push(valueOffset >>> 8 * (4 - fieldTypeLength)) : fieldValues.push(valueOffset); else for (var i = 0; i < typeCount; i++) {
+          var indexOffset = fieldTypeLength * i;
+          if (fieldTypeLength >= 8) if (-1 !== [ "RATIONAL", "SRATIONAL" ].indexOf(fieldTypeName)) {
+            fieldValues.push(this.getUint32(valueOffset + indexOffset));
+            fieldValues.push(this.getUint32(valueOffset + indexOffset + 4));
+          } else cc.logID(8e3); else fieldValues.push(this.getBytes(fieldTypeLength, valueOffset + indexOffset));
+        }
+        "ASCII" === fieldTypeName && fieldValues.forEach((function(e, i, a) {
+          a[i] = String.fromCharCode(e);
+        }));
+        return fieldValues;
+      },
+      getBytes: function(numBytes, offset) {
+        if (numBytes <= 0) cc.logID(8001); else {
+          if (numBytes <= 1) return this.getUint8(offset);
+          if (numBytes <= 2) return this.getUint16(offset);
+          if (numBytes <= 3) return this.getUint32(offset) >>> 8;
+          if (numBytes <= 4) return this.getUint32(offset);
+          cc.logID(8002);
+        }
+      },
+      getBits: function(numBits, byteOffset, bitOffset) {
+        bitOffset = bitOffset || 0;
+        var extraBytes = Math.floor(bitOffset / 8);
+        var newByteOffset = byteOffset + extraBytes;
+        var totalBits = bitOffset + numBits;
+        var shiftRight = 32 - numBits;
+        var shiftLeft, rawBits;
+        if (totalBits <= 0) cc.logID(6023); else if (totalBits <= 8) {
+          shiftLeft = 24 + bitOffset;
+          rawBits = this.getUint8(newByteOffset);
+        } else if (totalBits <= 16) {
+          shiftLeft = 16 + bitOffset;
+          rawBits = this.getUint16(newByteOffset);
+        } else if (totalBits <= 32) {
+          shiftLeft = bitOffset;
+          rawBits = this.getUint32(newByteOffset);
+        } else cc.logID(6022);
+        return {
+          bits: rawBits << shiftLeft >>> shiftRight,
+          byteOffset: newByteOffset + Math.floor(totalBits / 8),
+          bitOffset: totalBits % 8
+        };
+      },
+      parseFileDirectory: function(byteOffset) {
+        var numDirEntries = this.getUint16(byteOffset);
+        var tiffFields = [];
+        for (var i = byteOffset + 2, entryCount = 0; entryCount < numDirEntries; i += 12, 
+        entryCount++) {
+          var fieldTag = this.getUint16(i);
+          var fieldType = this.getUint16(i + 2);
+          var typeCount = this.getUint32(i + 4);
+          var valueOffset = this.getUint32(i + 8);
+          var fieldTagName = this.getFieldTagName(fieldTag);
+          var fieldTypeName = this.getFieldTypeName(fieldType);
+          var fieldValues = this.getFieldValues(fieldTagName, fieldTypeName, typeCount, valueOffset);
+          tiffFields[fieldTagName] = {
+            type: fieldTypeName,
+            values: fieldValues
+          };
+        }
+        this._fileDirectories.push(tiffFields);
+        var nextIFDByteOffset = this.getUint32(i);
+        0 !== nextIFDByteOffset && this.parseFileDirectory(nextIFDByteOffset);
+      },
+      clampColorSample: function(colorSample, bitsPerSample) {
+        var multiplier = Math.pow(2, 8 - bitsPerSample);
+        return Math.floor(colorSample * multiplier + (multiplier - 1));
+      },
+      parseTIFF: function(tiffData, canvas) {
+        canvas = canvas || document.createElement("canvas");
+        this._tiffData = tiffData;
+        this.canvas = canvas;
+        this.checkLittleEndian();
+        if (!this.hasTowel()) return;
+        var firstIFDByteOffset = this.getUint32(4);
+        this._fileDirectories.length = 0;
+        this.parseFileDirectory(firstIFDByteOffset);
+        var fileDirectory = this._fileDirectories[0];
+        var imageWidth = fileDirectory["ImageWidth"].values[0];
+        var imageLength = fileDirectory["ImageLength"].values[0];
+        this.canvas.width = imageWidth;
+        this.canvas.height = imageLength;
+        var strips = [];
+        var compression = fileDirectory["Compression"] ? fileDirectory["Compression"].values[0] : 1;
+        var samplesPerPixel = fileDirectory["SamplesPerPixel"].values[0];
+        var sampleProperties = [];
+        var bitsPerPixel = 0;
+        var hasBytesPerPixel = false;
+        fileDirectory["BitsPerSample"].values.forEach((function(bitsPerSample, i, bitsPerSampleValues) {
+          sampleProperties[i] = {
+            bitsPerSample: bitsPerSample,
+            hasBytesPerSample: false,
+            bytesPerSample: void 0
+          };
+          if (bitsPerSample % 8 === 0) {
+            sampleProperties[i].hasBytesPerSample = true;
+            sampleProperties[i].bytesPerSample = bitsPerSample / 8;
+          }
+          bitsPerPixel += bitsPerSample;
+        }), this);
+        if (bitsPerPixel % 8 === 0) {
+          hasBytesPerPixel = true;
+          var bytesPerPixel = bitsPerPixel / 8;
+        }
+        var stripOffsetValues = fileDirectory["StripOffsets"].values;
+        var numStripOffsetValues = stripOffsetValues.length;
+        if (fileDirectory["StripByteCounts"]) var stripByteCountValues = fileDirectory["StripByteCounts"].values; else {
+          cc.logID(8003);
+          if (1 !== numStripOffsetValues) throw Error(debug.getError(6024));
+          var stripByteCountValues = [ Math.ceil(imageWidth * imageLength * bitsPerPixel / 8) ];
+        }
+        for (var i = 0; i < numStripOffsetValues; i++) {
+          var stripOffset = stripOffsetValues[i];
+          strips[i] = [];
+          var stripByteCount = stripByteCountValues[i];
+          for (var byteOffset = 0, bitOffset = 0, jIncrement = 1, getHeader = true, pixel = [], numBytes = 0, sample = 0, currentSample = 0; byteOffset < stripByteCount; byteOffset += jIncrement) switch (compression) {
+           case 1:
+            for (var m = 0, pixel = []; m < samplesPerPixel; m++) {
+              if (!sampleProperties[m].hasBytesPerSample) {
+                var sampleInfo = this.getBits(sampleProperties[m].bitsPerSample, stripOffset + byteOffset, bitOffset);
+                pixel.push(sampleInfo.bits);
+                byteOffset = sampleInfo.byteOffset - stripOffset;
+                bitOffset = sampleInfo.bitOffset;
+                throw RangeError(debug.getError(6025));
+              }
+              var sampleOffset = sampleProperties[m].bytesPerSample * m;
+              pixel.push(this.getBytes(sampleProperties[m].bytesPerSample, stripOffset + byteOffset + sampleOffset));
+            }
+            strips[i].push(pixel);
+            if (!hasBytesPerPixel) {
+              jIncrement = 0;
+              throw RangeError(debug.getError(6026));
+            }
+            jIncrement = bytesPerPixel;
+            break;
+
+           case 2:
+           case 3:
+           case 4:
+           case 5:
+           case 6:
+           case 7:
+            break;
+
+           case 32773:
+            if (getHeader) {
+              getHeader = false;
+              var blockLength = 1;
+              var iterations = 1;
+              var header = this.getInt8(stripOffset + byteOffset);
+              header >= 0 && header <= 127 ? blockLength = header + 1 : header >= -127 && header <= -1 ? iterations = 1 - header : getHeader = true;
+            } else {
+              var currentByte = this.getUint8(stripOffset + byteOffset);
+              for (var m = 0; m < iterations; m++) {
+                if (!sampleProperties[sample].hasBytesPerSample) throw RangeError(debug.getError(6025));
+                currentSample = currentSample << 8 * numBytes | currentByte;
+                numBytes++;
+                if (numBytes === sampleProperties[sample].bytesPerSample) {
+                  pixel.push(currentSample);
+                  currentSample = numBytes = 0;
+                  sample++;
+                }
+                if (sample === samplesPerPixel) {
+                  strips[i].push(pixel);
+                  pixel = [];
+                  sample = 0;
+                }
+              }
+              blockLength--;
+              0 === blockLength && (getHeader = true);
+            }
+            jIncrement = 1;
+          }
+        }
+        if (canvas.getContext) {
+          var ctx = this.canvas.getContext("2d");
+          ctx.fillStyle = "rgba(255, 255, 255, 0)";
+          var rowsPerStrip = fileDirectory["RowsPerStrip"] ? fileDirectory["RowsPerStrip"].values[0] : imageLength;
+          var numStrips = strips.length;
+          var imageLengthModRowsPerStrip = imageLength % rowsPerStrip;
+          var rowsInLastStrip = 0 === imageLengthModRowsPerStrip ? rowsPerStrip : imageLengthModRowsPerStrip;
+          var numRowsInStrip = rowsPerStrip;
+          var numRowsInPreviousStrip = 0;
+          var photometricInterpretation = fileDirectory["PhotometricInterpretation"].values[0];
+          var extraSamplesValues = [];
+          var numExtraSamples = 0;
+          if (fileDirectory["ExtraSamples"]) {
+            extraSamplesValues = fileDirectory["ExtraSamples"].values;
+            numExtraSamples = extraSamplesValues.length;
+          }
+          if (fileDirectory["ColorMap"]) {
+            var colorMapValues = fileDirectory["ColorMap"].values;
+            var colorMapSampleSize = Math.pow(2, sampleProperties[0].bitsPerSample);
+          }
+          for (var i = 0; i < numStrips; i++) {
+            i + 1 === numStrips && (numRowsInStrip = rowsInLastStrip);
+            var numPixels = strips[i].length;
+            var yPadding = numRowsInPreviousStrip * i;
+            for (var y = 0, j = 0; y < numRowsInStrip, j < numPixels; y++) for (var x = 0; x < imageWidth; x++, 
+            j++) {
+              var pixelSamples = strips[i][j];
+              var red = 0;
+              var green = 0;
+              var blue = 0;
+              var opacity = 1;
+              if (numExtraSamples > 0) for (var k = 0; k < numExtraSamples; k++) if (1 === extraSamplesValues[k] || 2 === extraSamplesValues[k]) {
+                opacity = pixelSamples[3 + k] / 256;
+                break;
+              }
+              switch (photometricInterpretation) {
+               case 0:
+                if (sampleProperties[0].hasBytesPerSample) var invertValue = Math.pow(16, 2 * sampleProperties[0].bytesPerSample);
+                pixelSamples.forEach((function(sample, index, samples) {
+                  samples[index] = invertValue - sample;
+                }));
+
+               case 1:
+                red = green = blue = this.clampColorSample(pixelSamples[0], sampleProperties[0].bitsPerSample);
+                break;
+
+               case 2:
+                red = this.clampColorSample(pixelSamples[0], sampleProperties[0].bitsPerSample);
+                green = this.clampColorSample(pixelSamples[1], sampleProperties[1].bitsPerSample);
+                blue = this.clampColorSample(pixelSamples[2], sampleProperties[2].bitsPerSample);
+                break;
+
+               case 3:
+                if (void 0 === colorMapValues) throw Error(debug.getError(6027));
+                var colorMapIndex = pixelSamples[0];
+                red = this.clampColorSample(colorMapValues[colorMapIndex], 16);
+                green = this.clampColorSample(colorMapValues[colorMapSampleSize + colorMapIndex], 16);
+                blue = this.clampColorSample(colorMapValues[2 * colorMapSampleSize + colorMapIndex], 16);
+                break;
+
+               default:
+                throw RangeError(debug.getError(6028, photometricInterpretation));
+              }
+              ctx.fillStyle = "rgba(" + red + ", " + green + ", " + blue + ", " + opacity + ")";
+              ctx.fillRect(x, yPadding + y, 1, 1);
+            }
+            numRowsInPreviousStrip = numRowsInStrip;
+          }
+        }
+        return this.canvas;
+      },
+      fieldTagNames: {
+        315: "Artist",
+        258: "BitsPerSample",
+        265: "CellLength",
+        264: "CellWidth",
+        320: "ColorMap",
+        259: "Compression",
+        33432: "Copyright",
+        306: "DateTime",
+        338: "ExtraSamples",
+        266: "FillOrder",
+        289: "FreeByteCounts",
+        288: "FreeOffsets",
+        291: "GrayResponseCurve",
+        290: "GrayResponseUnit",
+        316: "HostComputer",
+        270: "ImageDescription",
+        257: "ImageLength",
+        256: "ImageWidth",
+        271: "Make",
+        281: "MaxSampleValue",
+        280: "MinSampleValue",
+        272: "Model",
+        254: "NewSubfileType",
+        274: "Orientation",
+        262: "PhotometricInterpretation",
+        284: "PlanarConfiguration",
+        296: "ResolutionUnit",
+        278: "RowsPerStrip",
+        277: "SamplesPerPixel",
+        305: "Software",
+        279: "StripByteCounts",
+        273: "StripOffsets",
+        255: "SubfileType",
+        263: "Threshholding",
+        282: "XResolution",
+        283: "YResolution",
+        326: "BadFaxLines",
+        327: "CleanFaxData",
+        343: "ClipPath",
+        328: "ConsecutiveBadFaxLines",
+        433: "Decode",
+        434: "DefaultImageColor",
+        269: "DocumentName",
+        336: "DotRange",
+        321: "HalftoneHints",
+        346: "Indexed",
+        347: "JPEGTables",
+        285: "PageName",
+        297: "PageNumber",
+        317: "Predictor",
+        319: "PrimaryChromaticities",
+        532: "ReferenceBlackWhite",
+        339: "SampleFormat",
+        559: "StripRowCounts",
+        330: "SubIFDs",
+        292: "T4Options",
+        293: "T6Options",
+        325: "TileByteCounts",
+        323: "TileLength",
+        324: "TileOffsets",
+        322: "TileWidth",
+        301: "TransferFunction",
+        318: "WhitePoint",
+        344: "XClipPathUnits",
+        286: "XPosition",
+        529: "YCbCrCoefficients",
+        531: "YCbCrPositioning",
+        530: "YCbCrSubSampling",
+        345: "YClipPathUnits",
+        287: "YPosition",
+        37378: "ApertureValue",
+        40961: "ColorSpace",
+        36868: "DateTimeDigitized",
+        36867: "DateTimeOriginal",
+        34665: "Exif IFD",
+        36864: "ExifVersion",
+        33434: "ExposureTime",
+        41728: "FileSource",
+        37385: "Flash",
+        40960: "FlashpixVersion",
+        33437: "FNumber",
+        42016: "ImageUniqueID",
+        37384: "LightSource",
+        37500: "MakerNote",
+        37377: "ShutterSpeedValue",
+        37510: "UserComment",
+        33723: "IPTC",
+        34675: "ICC Profile",
+        700: "XMP",
+        42112: "GDAL_METADATA",
+        42113: "GDAL_NODATA",
+        34377: "Photoshop"
+      },
+      fieldTypeNames: {
+        1: "BYTE",
+        2: "ASCII",
+        3: "SHORT",
+        4: "LONG",
+        5: "RATIONAL",
+        6: "SBYTE",
+        7: "UNDEFINED",
+        8: "SSHORT",
+        9: "SLONG",
+        10: "SRATIONAL",
+        11: "FLOAT",
+        12: "DOUBLE"
+      }
+    };
+    module.exports = tiffReader;
+  }), {
+    "../core/CCDebug": 27
+  } ],
+  221: [ (function(require, module, exports) {
+    require("./CCParticleAsset");
+    require("./CCParticleSystem");
+    require("./particle-simulator");
+    require("./particle-system-assembler");
+  }), {
+    "./CCParticleAsset": 218,
+    "./CCParticleSystem": 219,
+    "./particle-simulator": 222,
+    "./particle-system-assembler": 223
+  } ],
+  222: [ (function(require, module, exports) {
+    var AffineTrans = require("../core/utils/affine-transform");
+    var js = require("../core/platform/js");
+    var misc = require("../core/utils/misc");
+    var ZERO_VEC2 = cc.v2(0, 0);
+    var _trans = AffineTrans.create();
+    var _pos = cc.v2();
+    var _tpa = cc.v2();
+    var _tpb = cc.v2();
+    var _tpc = cc.v2();
+    var Particle = function() {
+      this.pos = cc.v2(0, 0);
+      this.startPos = cc.v2(0, 0);
+      this.color = cc.color(0, 0, 0, 255);
+      this.deltaColor = {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 255
+      };
+      this.size = 0;
+      this.deltaSize = 0;
+      this.rotation = 0;
+      this.deltaRotation = 0;
+      this.timeToLive = 0;
+      this.drawPos = cc.v2(0, 0);
+      this.dir = cc.v2(0, 0);
+      this.radialAccel = 0;
+      this.tangentialAccel = 0;
+      this.angle = 0;
+      this.degreesPerSecond = 0;
+      this.radius = 0;
+      this.deltaRadius = 0;
+    };
+    var pool = new js.Pool(function(par) {
+      par.pos.set(ZERO_VEC2);
+      par.startPos.set(ZERO_VEC2);
+      par.color._val = 4278190080;
+      par.deltaColor.r = par.deltaColor.g = par.deltaColor.b = 0;
+      par.deltaColor.a = 255;
+      par.size = 0;
+      par.deltaSize = 0;
+      par.rotation = 0;
+      par.deltaRotation = 0;
+      par.timeToLive = 0;
+      par.drawPos.set(ZERO_VEC2);
+      par.dir.set(ZERO_VEC2);
+      par.radialAccel = 0;
+      par.tangentialAccel = 0;
+      par.angle = 0;
+      par.degreesPerSecond = 0;
+      par.radius = 0;
+      par.deltaRadius = 0;
+    }, 1024);
+    pool.get = function() {
+      return this._get() || new Particle();
+    };
+    var Simulator = function(system) {
+      this.sys = system;
+      this.particles = [];
+      this.active = false;
+      this.finished = false;
+      this.elapsed = 0;
+      this.emitCounter = 0;
+      this._uvFilled = 0;
+    };
+    Simulator.prototype.stop = function() {
+      this.active = false;
+      this.elapsed = this.sys.duration;
+      this.emitCounter = 0;
+    };
+    Simulator.prototype.reset = function() {
+      this.active = true;
+      this.elapsed = 0;
+      this.emitCounter = 0;
+      this.finished = false;
+      var particles = this.particles;
+      for (var id = 0; id < particles.length; ++id) pool.put(particles[id]);
+      particles.length = 0;
+    };
+    Simulator.prototype.emitParticle = function(pos) {
+      var psys = this.sys;
+      var clampf = misc.clampf;
+      var particle = pool.get();
+      this.particles.push(particle);
+      particle.timeToLive = psys.life + psys.lifeVar * (Math.random() - .5) * 2;
+      var timeToLive = particle.timeToLive = Math.max(0, particle.timeToLive);
+      particle.pos.x = psys.sourcePos.x + psys.posVar.x * (Math.random() - .5) * 2;
+      particle.pos.y = psys.sourcePos.y + psys.posVar.y * (Math.random() - .5) * 2;
+      var sr = void 0, sg = void 0, sb = void 0, sa = void 0;
+      var startColor = psys._startColor, startColorVar = psys._startColorVar;
+      var endColor = psys._endColor, endColorVar = psys._endColorVar;
+      particle.color.r = sr = clampf(startColor.r + startColorVar.r * (Math.random() - .5) * 2, 0, 255);
+      particle.color.g = sg = clampf(startColor.g + startColorVar.g * (Math.random() - .5) * 2, 0, 255);
+      particle.color.b = sb = clampf(startColor.b + startColorVar.b * (Math.random() - .5) * 2, 0, 255);
+      particle.color.a = sa = clampf(startColor.a + startColorVar.a * (Math.random() - .5) * 2, 0, 255);
+      particle.deltaColor.r = (clampf(endColor.r + endColorVar.r * (Math.random() - .5) * 2, 0, 255) - sr) / timeToLive;
+      particle.deltaColor.g = (clampf(endColor.g + endColorVar.g * (Math.random() - .5) * 2, 0, 255) - sg) / timeToLive;
+      particle.deltaColor.b = (clampf(endColor.b + endColorVar.b * (Math.random() - .5) * 2, 0, 255) - sb) / timeToLive;
+      particle.deltaColor.a = (clampf(endColor.a + endColorVar.a * (Math.random() - .5) * 2, 0, 255) - sa) / timeToLive;
+      var startS = psys.startSize + psys.startSizeVar * (Math.random() - .5) * 2;
+      startS = Math.max(0, startS);
+      particle.size = startS;
+      if (psys.endSize === cc.ParticleSystem.START_SIZE_EQUAL_TO_END_SIZE) particle.deltaSize = 0; else {
+        var endS = psys.endSize + psys.endSizeVar * (Math.random() - .5) * 2;
+        endS = Math.max(0, endS);
+        particle.deltaSize = (endS - startS) / timeToLive;
+      }
+      var startA = psys.startSpin + psys.startSpinVar * (Math.random() - .5) * 2;
+      var endA = psys.endSpin + psys.endSpinVar * (Math.random() - .5) * 2;
+      particle.rotation = startA;
+      particle.deltaRotation = (endA - startA) / timeToLive;
+      particle.startPos.x = pos.x;
+      particle.startPos.y = pos.y;
+      var a = misc.degreesToRadians(psys.angle + psys.angleVar * (Math.random() - .5) * 2);
+      if (psys.emitterMode === cc.ParticleSystem.EmitterMode.GRAVITY) {
+        var s = psys.speed + psys.speedVar * (Math.random() - .5) * 2;
+        particle.dir.x = Math.cos(a);
+        particle.dir.y = Math.sin(a);
+        particle.dir.mulSelf(s);
+        particle.radialAccel = psys.radialAccel + psys.radialAccelVar * (Math.random() - .5) * 2;
+        particle.tangentialAccel = psys.tangentialAccel + psys.tangentialAccelVar * (Math.random() - .5) * 2;
+        psys.rotationIsDir && (particle.rotation = -misc.radiansToDegrees(Math.atan2(particle.dir.y, particle.dir.x)));
+      } else {
+        var startRadius = psys.startRadius + psys.startRadiusVar * (Math.random() - .5) * 2;
+        var endRadius = psys.endRadius + psys.endRadiusVar * (Math.random() - .5) * 2;
+        particle.radius = startRadius;
+        particle.deltaRadius = psys.endRadius === cc.ParticleSystem.START_RADIUS_EQUAL_TO_END_RADIUS ? 0 : (endRadius - startRadius) / timeToLive;
+        particle.angle = a;
+        particle.degreesPerSecond = misc.degreesToRadians(psys.rotatePerS + psys.rotatePerSVar * (Math.random() - .5) * 2);
+      }
+    };
+    Simulator.prototype.updateUVs = function(force) {
+      var particleCount = this.particles.length;
+      if (this.sys._buffer && this.sys._renderSpriteFrame) {
+        var FLOAT_PER_PARTICLE = 4 * this.sys._vertexFormat._bytes / 4;
+        var vbuf = this.sys._buffer._vData;
+        var uv = this.sys._renderSpriteFrame.uv;
+        var start = force ? 0 : this._uvFilled;
+        for (var i = start; i < particleCount; i++) {
+          var offset = i * FLOAT_PER_PARTICLE;
+          vbuf[offset + 2] = uv[0];
+          vbuf[offset + 3] = uv[1];
+          vbuf[offset + 7] = uv[2];
+          vbuf[offset + 8] = uv[3];
+          vbuf[offset + 12] = uv[4];
+          vbuf[offset + 13] = uv[5];
+          vbuf[offset + 17] = uv[6];
+          vbuf[offset + 18] = uv[7];
+        }
+        this._uvFilled = particleCount;
+      }
+    };
+    Simulator.prototype.updateParticleBuffer = function(particle, pos, buffer, offset) {
+      var vbuf = buffer._vData;
+      var uintbuf = buffer._uintVData;
+      var x = pos.x, y = pos.y;
+      var size_2 = particle.size / 2;
+      if (particle.rotation) {
+        var x1 = -size_2, y1 = -size_2;
+        var x2 = size_2, y2 = size_2;
+        var rad = -misc.degreesToRadians(particle.rotation);
+        var cr = Math.cos(rad), sr = Math.sin(rad);
+        vbuf[offset] = x1 * cr - y1 * sr + x;
+        vbuf[offset + 1] = x1 * sr + y1 * cr + y;
+        vbuf[offset + 5] = x2 * cr - y1 * sr + x;
+        vbuf[offset + 6] = x2 * sr + y1 * cr + y;
+        vbuf[offset + 10] = x1 * cr - y2 * sr + x;
+        vbuf[offset + 11] = x1 * sr + y2 * cr + y;
+        vbuf[offset + 15] = x2 * cr - y2 * sr + x;
+        vbuf[offset + 16] = x2 * sr + y2 * cr + y;
+      } else {
+        vbuf[offset] = x - size_2;
+        vbuf[offset + 1] = y - size_2;
+        vbuf[offset + 5] = x + size_2;
+        vbuf[offset + 6] = y - size_2;
+        vbuf[offset + 10] = x - size_2;
+        vbuf[offset + 11] = y + size_2;
+        vbuf[offset + 15] = x + size_2;
+        vbuf[offset + 16] = y + size_2;
+      }
+      uintbuf[offset + 4] = particle.color._val;
+      uintbuf[offset + 9] = particle.color._val;
+      uintbuf[offset + 14] = particle.color._val;
+      uintbuf[offset + 19] = particle.color._val;
+    };
+    Simulator.prototype.step = function(dt) {
+      var psys = this.sys;
+      var node = psys.node;
+      var particles = this.particles;
+      var FLOAT_PER_PARTICLE = 4 * psys._vertexFormat._bytes / 4;
+      node._updateWorldMatrix();
+      AffineTrans.fromMat4(_trans, node._worldMatrix);
+      if (psys.positionType === cc.ParticleSystem.PositionType.FREE) AffineTrans.transformVec2(_pos, ZERO_VEC2, _trans); else if (psys.positionType === cc.ParticleSystem.PositionType.RELATIVE) {
+        _pos.x = node._position.x;
+        _pos.y = node._position.y;
+      }
+      AffineTrans.invert(_trans, _trans);
+      var worldToNodeTrans = _trans;
+      if (this.active && psys.emissionRate) {
+        var rate = 1 / psys.emissionRate;
+        particles.length < psys.totalParticles && (this.emitCounter += dt);
+        while (particles.length < psys.totalParticles && this.emitCounter > rate) {
+          this.emitParticle(_pos);
+          this.emitCounter -= rate;
+        }
+        this.elapsed += dt;
+        -1 !== psys.duration && psys.duration < this.elapsed && psys.stopSystem();
+      }
+      var buffer = psys._buffer;
+      var particleCount = particles.length;
+      buffer.reset();
+      buffer.request(4 * particleCount, 6 * particleCount);
+      particleCount > this._uvFilled && this.updateUVs();
+      var particleIdx = 0;
+      while (particleIdx < particles.length) {
+        _tpa.x = _tpa.y = _tpb.x = _tpb.y = _tpc.x = _tpc.y = 0;
+        var particle = particles[particleIdx];
+        particle.timeToLive -= dt;
+        if (particle.timeToLive > 0) {
+          if (psys.emitterMode === cc.ParticleSystem.EmitterMode.GRAVITY) {
+            var tmp = _tpc, radial = _tpa, tangential = _tpb;
+            if (particle.pos.x || particle.pos.y) {
+              radial.set(particle.pos);
+              radial.normalizeSelf();
+            }
+            tangential.set(radial);
+            radial.mulSelf(particle.radialAccel);
+            var newy = tangential.x;
+            tangential.x = -tangential.y;
+            tangential.y = newy;
+            tangential.mulSelf(particle.tangentialAccel);
+            tmp.set(radial);
+            tmp.addSelf(tangential);
+            tmp.addSelf(psys.gravity);
+            tmp.mulSelf(dt);
+            particle.dir.addSelf(tmp);
+            tmp.set(particle.dir);
+            tmp.mulSelf(dt);
+            particle.pos.addSelf(tmp);
+          } else {
+            particle.angle += particle.degreesPerSecond * dt;
+            particle.radius += particle.deltaRadius * dt;
+            particle.pos.x = -Math.cos(particle.angle) * particle.radius;
+            particle.pos.y = -Math.sin(particle.angle) * particle.radius;
+          }
+          particle.color.r += particle.deltaColor.r * dt;
+          particle.color.g += particle.deltaColor.g * dt;
+          particle.color.b += particle.deltaColor.b * dt;
+          particle.color.a += particle.deltaColor.a * dt;
+          particle.size += particle.deltaSize * dt;
+          particle.size < 0 && (particle.size = 0);
+          particle.rotation += particle.deltaRotation * dt;
+          var newPos = _tpa;
+          if (psys.positionType === cc.ParticleSystem.PositionType.FREE || psys.positionType === cc.ParticleSystem.PositionType.RELATIVE) {
+            var diff = _tpb, startPos = _tpc;
+            AffineTrans.transformVec2(diff, _pos, worldToNodeTrans);
+            AffineTrans.transformVec2(startPos, particle.startPos, worldToNodeTrans);
+            diff.subSelf(startPos);
+            newPos.set(particle.pos);
+            newPos.subSelf(diff);
+          } else newPos.set(particle.pos);
+          var offset = FLOAT_PER_PARTICLE * particleIdx;
+          this.updateParticleBuffer(particle, newPos, buffer, offset);
+          ++particleIdx;
+        } else {
+          var deadParticle = particles[particleIdx];
+          particleIdx !== particles.length - 1 && (particles[particleIdx] = particles[particles.length - 1]);
+          pool.put(deadParticle);
+          particles.length--;
+        }
+      }
+      if (particles.length > 0) {
+        buffer.uploadData();
+        psys._ia._count = 6 * particles.length;
+      } else if (!this.active) {
+        this.finished = true;
+        psys._finishedSimulation();
+      }
+    };
+    module.exports = Simulator;
+  }), {
+    "../core/platform/js": 134,
+    "../core/utils/affine-transform": 191,
+    "../core/utils/misc": 198
+  } ],
+  223: [ (function(require, module, exports) {
+    var ParticleSystem = require("./CCParticleSystem");
+    var renderer = require("../core/renderer/");
+    var renderEngine = require("../core/renderer/render-engine");
+    var vfmtPosUvColor = require("../core/renderer/webgl/vertex-format").vfmtPosUvColor;
+    var QuadBuffer = require("../core/renderer/webgl/quad-buffer");
+    var particleSystemAssembler = {
+      useModel: true,
+      createIA: function(comp) {
+        var device = renderer.device;
+        comp._vertexFormat = vfmtPosUvColor;
+        comp._buffer = new QuadBuffer(renderer._walker, vfmtPosUvColor);
+        comp._ia = new renderEngine.InputAssembler();
+        comp._ia._vertexBuffer = comp._buffer._vb;
+        comp._ia._indexBuffer = comp._buffer._ib;
+        comp._ia._start = 0;
+        comp._ia._count = 0;
+      },
+      updateRenderData: function(comp) {
+        if (!comp._renderData) {
+          comp._renderData = new renderEngine.IARenderData();
+          comp._renderData.ia = comp._ia;
+        }
+        comp._renderData.material = comp._material;
+      },
+      renderIA: function(comp, renderer) {
+        renderer._flushIA(comp._renderData);
+      }
+    };
+    ParticleSystem._assembler = particleSystemAssembler;
+    module.exports = particleSystemAssembler;
+  }), {
+    "../core/renderer/": 155,
+    "../core/renderer/render-engine": 156,
+    "../core/renderer/webgl/quad-buffer": 186,
+    "../core/renderer/webgl/vertex-format": 189,
+    "./CCParticleSystem": 219
+  } ],
+  224: [ (function(require, module, exports) {
     var TiledMapAsset = cc.Class({
       name: "cc.TiledMapAsset",
       extends: cc.Asset,
@@ -37190,7 +41927,620 @@
     cc.TiledMapAsset = TiledMapAsset;
     module.exports = TiledMapAsset;
   }), {} ],
-  204: [ (function(require, module, exports) {
+  225: [ (function(require, module, exports) {
+    var VideoPlayerImpl = require("./video-player-impl");
+    var EventType = VideoPlayerImpl.EventType;
+    var ResourceType = cc.Enum({
+      REMOTE: 0,
+      LOCAL: 1
+    });
+    var VideoPlayer = cc.Class({
+      name: "cc.VideoPlayer",
+      extends: cc.Component,
+      editor: false,
+      properties: {
+        _resourceType: ResourceType.REMOTE,
+        resourceType: {
+          tooltip: false,
+          type: ResourceType,
+          set: function(value) {
+            this._resourceType = value;
+            this._updateVideoSource();
+          },
+          get: function() {
+            return this._resourceType;
+          }
+        },
+        _remoteURL: "",
+        remoteURL: {
+          tooltip: false,
+          type: cc.String,
+          set: function(url) {
+            this._remoteURL = url;
+            this._updateVideoSource();
+          },
+          get: function() {
+            return this._remoteURL;
+          }
+        },
+        _clip: {
+          default: null,
+          type: cc.Asset
+        },
+        clip: {
+          tooltip: false,
+          get: function() {
+            return this._clip;
+          },
+          set: function(value) {
+            this._clip = value;
+            this._updateVideoSource();
+          },
+          type: cc.Asset
+        },
+        currentTime: {
+          tooltip: false,
+          type: cc.Float,
+          set: function(time) {
+            this._impl && this._impl.seekTo(time);
+          },
+          get: function() {
+            if (this._impl) return this._impl.currentTime();
+            return -1;
+          }
+        },
+        _volume: 1,
+        volume: {
+          get: function() {
+            return this._volume;
+          },
+          set: function(value) {
+            this._volume = value;
+            this.isPlaying() && !this._mute && this._syncVolume();
+          },
+          range: [ 0, 1 ],
+          type: cc.Float,
+          tooltip: false
+        },
+        _mute: false,
+        mute: {
+          get: function() {
+            return this._mute;
+          },
+          set: function(value) {
+            this._mute = value;
+            this._syncVolume();
+          },
+          tooltip: false
+        },
+        keepAspectRatio: {
+          tooltip: false,
+          default: true,
+          type: cc.Boolean,
+          notify: function() {
+            this._impl.setKeepAspectRatioEnabled(this.keepAspectRatio);
+          }
+        },
+        isFullscreen: {
+          tooltip: false,
+          default: false,
+          type: cc.Boolean,
+          notify: function() {
+            this._impl.setFullScreenEnabled(this.isFullscreen);
+          }
+        },
+        videoPlayerEvent: {
+          default: [],
+          type: cc.Component.EventHandler
+        }
+      },
+      statics: {
+        EventType: EventType,
+        ResourceType: ResourceType,
+        Impl: VideoPlayerImpl
+      },
+      ctor: function() {
+        this._impl = new VideoPlayerImpl();
+      },
+      _syncVolume: function() {
+        var impl = this._impl;
+        if (impl) {
+          var volume = this._mute ? 0 : this._volume;
+          impl.setVolume(volume);
+        }
+      },
+      _updateVideoSource: function() {
+        var url = "";
+        this.resourceType === ResourceType.REMOTE ? url = this.remoteURL : this._clip && (url = this._clip.nativeUrl || "");
+        url && cc.loader.md5Pipe && (url = cc.loader.md5Pipe.transformURL(url));
+        this._impl.setURL(url);
+      },
+      onLoad: function() {
+        var impl = this._impl;
+        if (impl) {
+          impl.createDomElementIfNeeded();
+          this._updateVideoSource();
+          impl.seekTo(this.currentTime);
+          impl.setKeepAspectRatioEnabled(this.keepAspectRatio);
+          impl.setFullScreenEnabled(this.isFullscreen);
+          this.pause();
+          true;
+          impl.setEventListener(EventType.PLAYING, this.onPlaying.bind(this));
+          impl.setEventListener(EventType.PAUSED, this.onPasued.bind(this));
+          impl.setEventListener(EventType.STOPPED, this.onStopped.bind(this));
+          impl.setEventListener(EventType.COMPLETED, this.onCompleted.bind(this));
+          impl.setEventListener(EventType.META_LOADED, this.onMetaLoaded.bind(this));
+          impl.setEventListener(EventType.CLICKED, this.onClicked.bind(this));
+          impl.setEventListener(EventType.READY_TO_PLAY, this.onReadyToPlay.bind(this));
+        }
+      },
+      onRestore: function() {
+        this._impl || (this._impl = new VideoPlayerImpl());
+      },
+      onEnable: function() {
+        this._impl && this._impl.enable();
+      },
+      onDisable: function() {
+        this._impl && this._impl.disable();
+      },
+      onDestroy: function() {
+        if (this._impl) {
+          this._impl.destroy();
+          this._impl = null;
+        }
+      },
+      update: function(dt) {
+        this._impl && this._impl.updateMatrix(this.node);
+      },
+      onReadyToPlay: function() {
+        cc.Component.EventHandler.emitEvents(this.videoPlayerEvent, this, EventType.READY_TO_PLAY);
+        this.node.emit("ready-to-play", this);
+      },
+      onMetaLoaded: function() {
+        cc.Component.EventHandler.emitEvents(this.videoPlayerEvent, this, EventType.META_LOADED);
+        this.node.emit("meta-loaded", this);
+      },
+      onClicked: function() {
+        cc.Component.EventHandler.emitEvents(this.videoPlayerEvent, this, EventType.CLICKED);
+        this.node.emit("clicked", this);
+      },
+      onPlaying: function() {
+        cc.Component.EventHandler.emitEvents(this.videoPlayerEvent, this, EventType.PLAYING);
+        this.node.emit("playing", this);
+      },
+      onPasued: function() {
+        cc.Component.EventHandler.emitEvents(this.videoPlayerEvent, this, EventType.PAUSED);
+        this.node.emit("paused", this);
+      },
+      onStopped: function() {
+        cc.Component.EventHandler.emitEvents(this.videoPlayerEvent, this, EventType.STOPPED);
+        this.node.emit("stopped", this);
+      },
+      onCompleted: function() {
+        cc.Component.EventHandler.emitEvents(this.videoPlayerEvent, this, EventType.COMPLETED);
+        this.node.emit("completed", this);
+      },
+      play: function() {
+        if (this._impl) {
+          this._syncVolume();
+          this._impl.play();
+        }
+      },
+      resume: function() {
+        if (this._impl) {
+          this._syncVolume();
+          this._impl.resume();
+        }
+      },
+      pause: function() {
+        this._impl && this._impl.pause();
+      },
+      stop: function() {
+        this._impl && this._impl.stop();
+      },
+      getDuration: function() {
+        if (this._impl) return this._impl.duration();
+        return -1;
+      },
+      isPlaying: function() {
+        if (this._impl) return this._impl.isPlaying();
+        return false;
+      }
+    });
+    cc.VideoPlayer = module.exports = VideoPlayer;
+  }), {
+    "./video-player-impl": 226
+  } ],
+  226: [ (function(require, module, exports) {
+    var utils = require("../core/platform/utils");
+    var sys = require("../core/platform/CCSys");
+    var renderEngine = require("../core/renderer/render-engine");
+    var math = renderEngine.math;
+    var READY_STATE = {
+      HAVE_NOTHING: 0,
+      HAVE_METADATA: 1,
+      HAVE_CURRENT_DATA: 2,
+      HAVE_FUTURE_DATA: 3,
+      HAVE_ENOUGH_DATA: 4
+    };
+    var _mat4_temp = math.mat4.create();
+    var VideoPlayerImpl = cc.Class({
+      name: "VideoPlayerImpl",
+      ctor: function() {
+        this._EventList = {};
+        this._video = null;
+        this._url = "";
+        this._fullScreenEnabled = false;
+        this._loadedmeta = false;
+        this._loaded = false;
+        this._visible = false;
+        this._playing = false;
+        this._ignorePause = false;
+        this._forceUpdate = true;
+        this._m00 = 0;
+        this._m01 = 0;
+        this._m04 = 0;
+        this._m05 = 0;
+        this._m12 = 0;
+        this._m13 = 0;
+        this._w = 0;
+        this._h = 0;
+        this.__eventListeners = {};
+      },
+      _bindEvent: function() {
+        var video = this._video, self = this;
+        var cbs = this.__eventListeners;
+        cbs.loadedmetadata = function() {
+          self._loadedmeta = true;
+          self._fullScreenEnabled ? cc.screen.requestFullScreen(video) : cc.screen.exitFullScreen(video);
+          self._dispatchEvent(VideoPlayerImpl.EventType.META_LOADED);
+        };
+        cbs.ended = function() {
+          if (self._video !== video) return;
+          self._playing = false;
+          self._dispatchEvent(VideoPlayerImpl.EventType.COMPLETED);
+        };
+        cbs.play = function() {
+          if (self._video !== video) return;
+          self._playing = true;
+          self._updateVisibility();
+          self._dispatchEvent(VideoPlayerImpl.EventType.PLAYING);
+        };
+        cbs.pause = function() {
+          if (self._video !== video) return;
+          self._playing = false;
+          if (self._ignorePause) return;
+          self._dispatchEvent(VideoPlayerImpl.EventType.PAUSED);
+        };
+        cbs.click = function() {
+          self._dispatchEvent(VideoPlayerImpl.EventType.CLICKED);
+        };
+        video.addEventListener("loadedmetadata", cbs.loadedmetadata);
+        video.addEventListener("ended", cbs.ended);
+        video.addEventListener("play", cbs.play);
+        video.addEventListener("pause", cbs.pause);
+        video.addEventListener("click", cbs.click);
+        function onCanPlay() {
+          if (self._loaded || self._loadedmeta || self._playing) return;
+          var video = self._video;
+          if (video.readyState === READY_STATE.HAVE_ENOUGH_DATA) {
+            video.currentTime = 0;
+            self._loaded = true;
+            self._dispatchEvent(VideoPlayerImpl.EventType.READY_TO_PLAY);
+            self._updateVisibility();
+          }
+        }
+        cbs.onCanPlay = onCanPlay;
+        video.addEventListener("canplay", cbs.onCanPlay);
+        video.addEventListener("canplaythrough", cbs.onCanPlay);
+        video.addEventListener("suspend", cbs.onCanPlay);
+      },
+      _updateVisibility: function() {
+        var video = this._video;
+        if (!video) return;
+        if (this._visible) {
+          video.style.visibility = "visible";
+          this._forceUpdate = true;
+        } else {
+          video.style.visibility = "hidden";
+          video.pause();
+          this._playing = false;
+          this._forceUpdate = false;
+        }
+      },
+      _updateSize: function(width, height) {
+        var video = this._video;
+        if (!video) return;
+        video.style.width = width + "px";
+        video.style.height = height + "px";
+      },
+      _createDom: function() {
+        var video = document.createElement("video");
+        video.style.position = "absolute";
+        video.style.bottom = "0px";
+        video.style.left = "0px";
+        video.className = "cocosVideo";
+        video.setAttribute("preload", "auto");
+        video.setAttribute("webkit-playsinline", "");
+        video.setAttribute("playsinline", "");
+        video.setAttribute("x5-playsinline", "");
+        video.setAttribute("x5-video-player-type", "h5");
+        video.setAttribute("x5-video-player-fullscreen", this._fullScreenEnabled ? "true" : "false");
+        var orientation = cc.winSize.width > cc.winSize.height ? "landscape" : "portrait";
+        video.setAttribute("x5-video-orientation", orientation);
+        this._video = video;
+        cc.game.container.appendChild(video);
+      },
+      createDomElementIfNeeded: function() {
+        this._video || this._createDom();
+      },
+      removeDom: function() {
+        var video = this._video;
+        if (video) {
+          var hasChild = utils.contains(cc.game.container, video);
+          hasChild && cc.game.container.removeChild(video);
+          var cbs = this.__eventListeners;
+          video.removeEventListener("loadedmetadata", cbs.loadedmetadata);
+          video.removeEventListener("ended", cbs.ended);
+          video.removeEventListener("play", cbs.play);
+          video.removeEventListener("pause", cbs.pause);
+          video.removeEventListener("click", cbs.click);
+          video.removeEventListener("canplay", cbs.onCanPlay);
+          video.removeEventListener("canplaythrough", cbs.onCanPlay);
+          video.removeEventListener("suspend", cbs.onCanPlay);
+          cbs.loadedmetadata = null;
+          cbs.ended = null;
+          cbs.play = null;
+          cbs.pause = null;
+          cbs.click = null;
+          cbs.onCanPlay = null;
+        }
+        this._video = null;
+        this._url = "";
+      },
+      setURL: function(path) {
+        var source = void 0, extname = void 0;
+        if (this._url === path) return;
+        this._url = path;
+        this.removeDom();
+        this.createDomElementIfNeeded();
+        this._bindEvent();
+        var video = this._video;
+        video.style["visibility"] = "hidden";
+        this._loaded = false;
+        this._playing = false;
+        this._loadedmeta = false;
+        source = document.createElement("source");
+        source.src = path;
+        video.appendChild(source);
+        extname = cc.path.extname(path);
+        var polyfill = VideoPlayerImpl._polyfill;
+        for (var i = 0; i < polyfill.canPlayType.length; i++) if (extname !== polyfill.canPlayType[i]) {
+          source = document.createElement("source");
+          source.src = path.replace(extname, polyfill.canPlayType[i]);
+          video.appendChild(source);
+        }
+      },
+      getURL: function() {
+        return this._url;
+      },
+      play: function() {
+        var video = this._video;
+        if (!video || !this._visible || this._playing) return;
+        if (VideoPlayerImpl._polyfill.autoplayAfterOperation) {
+          var self = this;
+          setTimeout((function() {
+            video.play();
+          }), 20);
+        } else video.play();
+      },
+      pause: function() {
+        var video = this._video;
+        if (!this._playing || !video) return;
+        video.pause();
+      },
+      resume: function() {
+        this.play();
+      },
+      stop: function() {
+        var video = this._video;
+        if (!video || !this._visible) return;
+        this._ignorePause = true;
+        video.currentTime = 0;
+        video.pause();
+        setTimeout(function() {
+          this._dispatchEvent(VideoPlayerImpl.EventType.STOPPED);
+          this._ignorePause = false;
+        }.bind(this), 0);
+      },
+      setVolume: function(volume) {
+        var video = this._video;
+        video && (video.volume = volume);
+      },
+      seekTo: function(time) {
+        var video = this._video;
+        if (!video) return;
+        this._loaded ? video.currentTime = time : (function() {
+          var cb = function() {
+            video.currentTime = time;
+            video.removeEventListener(VideoPlayerImpl._polyfill.event, cb);
+          };
+          video.addEventListener(VideoPlayerImpl._polyfill.event, cb);
+        })();
+        VideoPlayerImpl._polyfill.autoplayAfterOperation && this.isPlaying() && setTimeout((function() {
+          video.play();
+        }), 20);
+      },
+      isPlaying: function() {
+        var video = this._video;
+        VideoPlayerImpl._polyfill.autoplayAfterOperation && this._playing && setTimeout((function() {
+          video.play();
+        }), 20);
+        return this._playing;
+      },
+      duration: function() {
+        var video = this._video;
+        var duration = -1;
+        if (!video) return duration;
+        duration = video.duration;
+        duration <= 0 && cc.logID(7702);
+        return duration;
+      },
+      currentTime: function() {
+        var video = this._video;
+        if (!video) return -1;
+        return video.currentTime;
+      },
+      setKeepAspectRatioEnabled: function() {
+        false;
+        cc.logID(7700);
+      },
+      isKeepAspectRatioEnabled: function() {
+        return true;
+      },
+      setFullScreenEnabled: function(enable) {
+        var video = this._video;
+        if (!video) return;
+        this._fullScreenEnabled = enable;
+        enable ? cc.screen.requestFullScreen(video) : cc.screen.exitFullScreen(video);
+      },
+      isFullScreenEnabled: function() {
+        return this._fullScreenEnabled;
+      },
+      setEventListener: function(event, callback) {
+        this._EventList[event] = callback;
+      },
+      removeEventListener: function(event) {
+        this._EventList[event] = null;
+      },
+      _dispatchEvent: function(event) {
+        var callback = this._EventList[event];
+        callback && callback.call(this, this, this._video.src);
+      },
+      onPlayEvent: function() {
+        var callback = this._EventList[VideoPlayerImpl.EventType.PLAYING];
+        callback.call(this, this, this._video.src);
+      },
+      enable: function() {
+        var list = VideoPlayerImpl.elements;
+        -1 === list.indexOf(this) && list.push(this);
+        this.setVisible(true);
+      },
+      disable: function() {
+        var list = VideoPlayerImpl.elements;
+        var index = list.indexOf(this);
+        -1 !== index && list.splice(index, 1);
+        this.setVisible(false);
+      },
+      destroy: function() {
+        this.disable();
+        this.removeDom();
+      },
+      setVisible: function(visible) {
+        if (this._visible !== visible) {
+          this._visible = !!visible;
+          this._updateVisibility();
+        }
+      },
+      updateMatrix: function(node) {
+        if (!this._video || !this._visible) return;
+        node.getWorldMatrix(_mat4_temp);
+        if (!this._forceUpdate && this._m00 === _mat4_temp.m00 && this._m01 === _mat4_temp.m01 && this._m04 === _mat4_temp.m04 && this._m05 === _mat4_temp.m05 && this._m12 === _mat4_temp.m12 && this._m13 === _mat4_temp.m13 && this._w === node._contentSize.width && this._h === node._contentSize.height) return;
+        this._m00 = _mat4_temp.m00;
+        this._m01 = _mat4_temp.m01;
+        this._m04 = _mat4_temp.m04;
+        this._m05 = _mat4_temp.m05;
+        this._m12 = _mat4_temp.m12;
+        this._m13 = _mat4_temp.m13;
+        this._w = node._contentSize.width;
+        this._h = node._contentSize.height;
+        var scaleX = cc.view._scaleX, scaleY = cc.view._scaleY;
+        var dpr = cc.view._devicePixelRatio;
+        scaleX /= dpr;
+        scaleY /= dpr;
+        var container = cc.game.container;
+        var a = _mat4_temp.m00 * scaleX, b = _mat4_temp.m01, c = _mat4_temp.m04, d = _mat4_temp.m05 * scaleY;
+        var offsetX = container && container.style.paddingLeft ? parseInt(container.style.paddingLeft) : 0;
+        var offsetY = container && container.style.paddingBottom ? parseInt(container.style.paddingBottom) : 0;
+        var w = void 0, h = void 0;
+        if (VideoPlayerImpl._polyfill.zoomInvalid) {
+          this._updateSize(this._w * a, this._h * d);
+          a = 1;
+          d = 1;
+          w = this._w * scaleX;
+          h = this._h * scaleY;
+        } else {
+          w = this._w * scaleX;
+          h = this._h * scaleY;
+          this._updateSize(this._w, this._h);
+        }
+        var appx = w * _mat4_temp.m00 * node._anchorPoint.x;
+        var appy = h * _mat4_temp.m05 * node._anchorPoint.y;
+        var viewport = cc.view._viewportRect;
+        offsetX += viewport.x / dpr;
+        offsetY += viewport.y / dpr;
+        var tx = _mat4_temp.m12 * scaleX - appx + offsetX, ty = _mat4_temp.m13 * scaleY - appy + offsetY;
+        var matrix = "matrix(" + a + "," + -b + "," + -c + "," + d + "," + tx + "," + -ty + ")";
+        this._video.style["transform"] = matrix;
+        this._video.style["-webkit-transform"] = matrix;
+        this._video.style["transform-origin"] = "0px 100% 0px";
+        this._video.style["-webkit-transform-origin"] = "0px 100% 0px";
+      }
+    });
+    VideoPlayerImpl.EventType = {
+      PLAYING: 0,
+      PAUSED: 1,
+      STOPPED: 2,
+      COMPLETED: 3,
+      META_LOADED: 4,
+      CLICKED: 5,
+      READY_TO_PLAY: 6
+    };
+    VideoPlayerImpl.elements = [];
+    VideoPlayerImpl.pauseElements = [];
+    cc.game.on(cc.game.EVENT_HIDE, (function() {
+      var list = VideoPlayerImpl.elements;
+      for (var element, i = 0; i < list.length; i++) {
+        element = list[i];
+        if (element.isPlaying()) {
+          element.pause();
+          VideoPlayerImpl.pauseElements.push(element);
+        }
+      }
+    }));
+    cc.game.on(cc.game.EVENT_SHOW, (function() {
+      var list = VideoPlayerImpl.pauseElements;
+      var element = list.pop();
+      while (element) {
+        element.play();
+        element = list.pop();
+      }
+    }));
+    VideoPlayerImpl._polyfill = {
+      devicePixelRatio: false,
+      event: "canplay",
+      canPlayType: []
+    };
+    var dom = document.createElement("video");
+    true;
+    if (dom.canPlayType("video/ogg")) {
+      VideoPlayerImpl._polyfill.canPlayType.push(".ogg");
+      VideoPlayerImpl._polyfill.canPlayType.push(".ogv");
+    }
+    dom.canPlayType("video/mp4") && VideoPlayerImpl._polyfill.canPlayType.push(".mp4");
+    dom.canPlayType("video/webm") && VideoPlayerImpl._polyfill.canPlayType.push(".webm");
+    sys.browserType === sys.BROWSER_TYPE_FIREFOX && (VideoPlayerImpl._polyfill.autoplayAfterOperation = true);
+    sys.OS_ANDROID !== sys.os || sys.browserType !== sys.BROWSER_TYPE_SOUGOU && sys.browserType !== sys.BROWSER_TYPE_360 || (VideoPlayerImpl._polyfill.zoomInvalid = true);
+    var style = document.createElement("style");
+    style.innerHTML = ".cocosVideo:-moz-full-screen{transform:matrix(1,0,0,1,0,0) !important;}.cocosVideo:full-screen{transform:matrix(1,0,0,1,0,0) !important;}.cocosVideo:-webkit-full-screen{transform:matrix(1,0,0,1,0,0) !important;}";
+    document.head.appendChild(style);
+    module.exports = VideoPlayerImpl;
+  }), {
+    "../core/platform/CCSys": 123,
+    "../core/platform/utils": 138,
+    "../core/renderer/render-engine": 156
+  } ],
+  227: [ (function(require, module, exports) {
     require("./cocos2d/core");
     require("./cocos2d/animation");
     false;
@@ -37208,20 +42558,20 @@
   }), {
     "./cocos2d/actions": 8,
     "./cocos2d/animation": 16,
-    "./cocos2d/core": 83,
+    "./cocos2d/core": 91,
     "./cocos2d/core/components/CCStudioComponent": void 0,
-    "./cocos2d/deprecated": 200,
-    "./cocos2d/particle": void 0,
-    "./cocos2d/particle/CCParticleAsset": 202,
+    "./cocos2d/deprecated": 215,
+    "./cocos2d/particle": 221,
+    "./cocos2d/particle/CCParticleAsset": 218,
     "./cocos2d/tilemap": void 0,
-    "./cocos2d/tilemap/CCTiledMapAsset": 203,
-    "./cocos2d/videoplayer/CCVideoPlayer": void 0,
+    "./cocos2d/tilemap/CCTiledMapAsset": 224,
+    "./cocos2d/videoplayer/CCVideoPlayer": 225,
     "./cocos2d/webview/CCWebView": void 0,
     "./extensions/ccpool/CCNodePool": void 0,
     "./extensions/dragonbones": void 0,
     "./extensions/spine": void 0
   } ],
-  205: [ (function(require, module, exports) {
+  228: [ (function(require, module, exports) {
     var _global = "undefined" === typeof window ? global : window;
     _global.cc = _global.cc || {};
     _global._cc = _global._cc || {};
@@ -37239,23 +42589,23 @@
     false;
     module.exports = _global.cc;
   }), {
-    "./cocos2d": 201,
-    "./cocos2d/core/predefine": 131,
-    "./extends": 204,
+    "./cocos2d": 216,
+    "./cocos2d/core/predefine": 139,
+    "./extends": 227,
     "./package": void 0,
-    "./polyfill/array": 206,
-    "./polyfill/misc": 207,
-    "./polyfill/object": 208,
-    "./polyfill/string": 209,
-    "./polyfill/typescript": 210,
-    "./predefine": 211
+    "./polyfill/array": 229,
+    "./polyfill/misc": 230,
+    "./polyfill/object": 231,
+    "./polyfill/string": 232,
+    "./polyfill/typescript": 233,
+    "./predefine": 234
   } ],
-  206: [ (function(require, module, exports) {
+  229: [ (function(require, module, exports) {
     Array.isArray || (Array.isArray = function(arg) {
       return "[object Array]" === Object.prototype.toString.call(arg);
     });
   }), {} ],
-  207: [ (function(require, module, exports) {
+  230: [ (function(require, module, exports) {
     Math.sign || (Math.sign = function(x) {
       x = +x;
       if (0 === x || isNaN(x)) return x;
@@ -37277,7 +42627,7 @@
       };
     }
   }), {} ],
-  208: [ (function(require, module, exports) {
+  231: [ (function(require, module, exports) {
     Object.assign || (Object.assign = function(target, source) {
       cc.js.mixin(target, source);
     });
@@ -37291,7 +42641,7 @@
       return descriptors;
     });
   }), {} ],
-  209: [ (function(require, module, exports) {
+  232: [ (function(require, module, exports) {
     String.prototype.startsWith || (String.prototype.startsWith = function(searchString, position) {
       position = position || 0;
       return this.lastIndexOf(searchString, position) === position;
@@ -37303,7 +42653,7 @@
       return -1 !== lastIndex && lastIndex === position;
     });
   }), {} ],
-  210: [ (function(require, module, exports) {
+  233: [ (function(require, module, exports) {
     var extendStatics = Object.setPrototypeOf || {
       __proto__: []
     } instanceof Array && function(d, b) {
@@ -37553,7 +42903,7 @@
       return m ? m.call(o) : "function" === typeof __values ? __values(o) : o[Symbol.iterator]();
     };
   }), {} ],
-  211: [ (function(require, module, exports) {
+  234: [ (function(require, module, exports) {
     var _global = "undefined" === typeof window ? global : window;
     function defineMacro(name, defaultValue) {
       "undefined" === typeof _global[name] && (_global[name] = defaultValue);
@@ -37579,4 +42929,4 @@
     var engineVersion = "2.1.0";
     _global["CocosEngine"] = cc.ENGINE_VERSION = engineVersion;
   }), {} ]
-}, {}, [ 205 ]);
+}, {}, [ 228 ]);

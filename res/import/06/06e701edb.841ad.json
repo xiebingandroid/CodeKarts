@@ -1,0 +1,162 @@
+[
+  {
+    "__type__": "cc.Asset",
+    "_name": "videoIntro",
+    "_native": ".mp4"
+  },
+  [
+    {
+      "__type__": "cc.SceneAsset",
+      "_name": "SplashScene",
+      "scene": {
+        "__id__": 1
+      },
+      "asyncLoadAssets": null
+    },
+    {
+      "__type__": "cc.Scene",
+      "_name": "New Node",
+      "_children": [
+        {
+          "__id__": 2
+        }
+      ],
+      "_anchorPoint": {
+        "__type__": "cc.Vec2"
+      },
+      "_scale": {
+        "__type__": "cc.Vec3",
+        "x": 0.18544560185185185,
+        "y": 0.18544560185185185,
+        "z": 0.18544560185185185
+      },
+      "autoReleaseAssets": true
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "Canvas",
+      "_parent": {
+        "__id__": 1
+      },
+      "_children": [
+        {
+          "__id__": 3
+        },
+        {
+          "__id__": 4
+        }
+      ],
+      "_components": [
+        {
+          "__type__": "cc.Canvas",
+          "node": {
+            "__id__": 2
+          },
+          "_designResolution": {
+            "__type__": "cc.Size",
+            "width": 1920,
+            "height": 1080
+          },
+          "_fitWidth": true
+        },
+        {
+          "__type__": "a872azkQGVBH5N1qXRmxIH9",
+          "node": {
+            "__id__": 2
+          },
+          "video": {
+            "__id__": 4
+          }
+        }
+      ],
+      "_contentSize": {
+        "__type__": "cc.Size",
+        "width": 1920,
+        "height": 1080
+      },
+      "_position": {
+        "__type__": "cc.Vec3",
+        "x": 960,
+        "y": 540
+      },
+      "_scale": {
+        "__type__": "cc.Vec3",
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "_id": "321r+i5RVJkLmAK8RYYryd"
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "Main Camera",
+      "_parent": {
+        "__id__": 2
+      },
+      "_level": 1,
+      "_components": [
+        {
+          "__type__": "cc.Camera",
+          "node": {
+            "__id__": 3
+          },
+          "_clearFlags": 7,
+          "_backgroundColor": {
+            "__type__": "cc.Color",
+            "r": 255,
+            "g": 255,
+            "b": 255
+          },
+          "_depth": -1
+        }
+      ],
+      "_scale": {
+        "__type__": "cc.Vec3",
+        "x": 1,
+        "y": 1,
+        "z": 1
+      }
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "video",
+      "_parent": {
+        "__id__": 2
+      },
+      "_level": 1,
+      "_components": [
+        {
+          "__type__": "cc.VideoPlayer",
+          "node": {
+            "__id__": 4
+          },
+          "_resourceType": 1,
+          "_clip": {
+            "__uuid__": "3fKoYTnrlJkJNPpUalxuhZ"
+          },
+          "videoPlayerEvent": [
+            {
+              "__type__": "cc.ClickEvent",
+              "target": {
+                "__id__": 2
+              },
+              "_componentId": "a872azkQGVBH5N1qXRmxIH9",
+              "handler": "onCompleted"
+            }
+          ]
+        }
+      ],
+      "_contentSize": {
+        "__type__": "cc.Size",
+        "width": 1920,
+        "height": 1080
+      },
+      "_scale": {
+        "__type__": "cc.Vec3",
+        "x": 1,
+        "y": 1,
+        "z": 1
+      }
+    }
+  ]
+]

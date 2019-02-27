@@ -437,9 +437,9 @@
       },
       "_scale": {
         "__type__": "cc.Vec3",
-        "x": 0.30503371009910135,
-        "y": 0.30503371009910135,
-        "z": 0.30503371009910135
+        "x": 0.09132893880208333,
+        "y": 0.09132893880208333,
+        "z": 0.09132893880208333
       },
       "autoReleaseAssets": false
     },
@@ -508,10 +508,10 @@
           "__id__": 21
         },
         {
-          "__id__": 22
+          "__id__": 24
         },
         {
-          "__id__": 23
+          "__id__": 25
         }
       ],
       "_level": 1,
@@ -525,7 +525,8 @@
             "__type__": "cc.Size",
             "width": 1920,
             "height": 1080
-          }
+          },
+          "_fitWidth": true
         },
         {
           "__type__": "72457xjAX1GAYQ1YxlJ0Zxs",
@@ -549,6 +550,9 @@
           },
           "roadCross": {
             "__uuid__": "c90lhjuydIGb/p4RWoPW/j"
+          },
+          "smoke": {
+            "__id__": 22
           }
         }
       ],
@@ -584,12 +588,6 @@
             "__id__": 3
           },
           "_clearFlags": 7,
-          "_backgroundColor": {
-            "__type__": "cc.Color",
-            "r": 36,
-            "g": 156,
-            "b": 11
-          },
           "_depth": -1
         }
       ],
@@ -1230,15 +1228,20 @@
       "_parent": {
         "__id__": 2
       },
+      "_children": [
+        {
+          "__id__": 22
+        },
+        {
+          "__id__": 23
+        }
+      ],
       "_level": 1,
       "_components": [
         {
           "__type__": "cc.Sprite",
           "node": {
             "__id__": 21
-          },
-          "_spriteFrame": {
-            "__uuid__": "acsFAMA5BL0aC01u304Mvj"
           }
         }
       ],
@@ -1251,6 +1254,105 @@
         "__type__": "cc.Vec3",
         "x": -500,
         "y": -52
+      },
+      "_scale": {
+        "__type__": "cc.Vec3",
+        "x": 1,
+        "y": 1,
+        "z": 1
+      }
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "smoke",
+      "_parent": {
+        "__id__": 21
+      },
+      "_level": 2,
+      "_components": [
+        {
+          "__type__": "cc.ParticleSystem",
+          "node": {
+            "__id__": 22
+          },
+          "_file": {
+            "__uuid__": "a3XlahC0JOlLHVrS86gI5B"
+          },
+          "_spriteFrame": {
+            "__uuid__": "47LfXTNedBhJ5sf0G+5l7j"
+          },
+          "totalParticles": 36,
+          "emissionRate": 180,
+          "life": 0.2,
+          "lifeVar": 0.2,
+          "_startColor": {
+            "__type__": "cc.Color",
+            "r": 255,
+            "g": 255,
+            "b": 255
+          },
+          "_startColorVar": {
+            "__type__": "cc.Color",
+            "a": 0
+          },
+          "_endColor": {
+            "__type__": "cc.Color",
+            "r": 255,
+            "g": 255,
+            "b": 255
+          },
+          "_endColorVar": {
+            "__type__": "cc.Color",
+            "a": 0
+          },
+          "angle": 180,
+          "angleVar": 0,
+          "startSize": 20,
+          "startSizeVar": 10,
+          "endSize": 16,
+          "posVar": {
+            "__type__": "cc.Vec2",
+            "x": -5,
+            "y": 5
+          },
+          "speed": 50,
+          "speedVar": 1.9999999999999996,
+          "tangentialAccel": 0
+        }
+      ],
+      "_position": {
+        "__type__": "cc.Vec3",
+        "x": -10
+      },
+      "_scale": {
+        "__type__": "cc.Vec3",
+        "x": 1,
+        "y": 1,
+        "z": 1
+      }
+    },
+    {
+      "__type__": "cc.Node",
+      "_name": "car",
+      "_parent": {
+        "__id__": 21
+      },
+      "_level": 2,
+      "_components": [
+        {
+          "__type__": "cc.Sprite",
+          "node": {
+            "__id__": 23
+          },
+          "_spriteFrame": {
+            "__uuid__": "acsFAMA5BL0aC01u304Mvj"
+          }
+        }
+      ],
+      "_contentSize": {
+        "__type__": "cc.Size",
+        "width": 120,
+        "height": 134
       },
       "_scale": {
         "__type__": "cc.Vec3",
@@ -1275,7 +1377,7 @@
         {
           "__type__": "cc.Sprite",
           "node": {
-            "__id__": 22
+            "__id__": 24
           },
           "_spriteFrame": {
             "__uuid__": "9fvz0eh9BIcqgVn5DViarW"
@@ -1310,7 +1412,7 @@
           "__type__": "cc.Node",
           "_name": "start",
           "_parent": {
-            "__id__": 23
+            "__id__": 25
           },
           "_level": 2,
           "_contentSize": {
@@ -1333,7 +1435,7 @@
           "__type__": "cc.Node",
           "_name": "down",
           "_parent": {
-            "__id__": 23
+            "__id__": 25
           },
           "_level": 2,
           "_contentSize": {
@@ -1356,7 +1458,7 @@
           "__type__": "cc.Node",
           "_name": "left",
           "_parent": {
-            "__id__": 23
+            "__id__": 25
           },
           "_level": 2,
           "_contentSize": {
@@ -1379,7 +1481,7 @@
           "__type__": "cc.Node",
           "_name": "right",
           "_parent": {
-            "__id__": 23
+            "__id__": 25
           },
           "_level": 2,
           "_contentSize": {
@@ -1402,7 +1504,7 @@
           "__type__": "cc.Node",
           "_name": "up",
           "_parent": {
-            "__id__": 23
+            "__id__": 25
           },
           "_level": 2,
           "_contentSize": {
@@ -1425,7 +1527,7 @@
           "__type__": "cc.Node",
           "_name": "circle",
           "_parent": {
-            "__id__": 23
+            "__id__": 25
           },
           "_level": 2,
           "_contentSize": {
@@ -1450,7 +1552,7 @@
         {
           "__type__": "cc.Sprite",
           "node": {
-            "__id__": 23
+            "__id__": 25
           },
           "_spriteFrame": {
             "__uuid__": "0b+xm80a9GK5Hf7iuJT8uc"
@@ -1461,7 +1563,7 @@
         {
           "__type__": "cc.Layout",
           "node": {
-            "__id__": 23
+            "__id__": 25
           },
           "_layoutSize": {
             "__type__": "cc.Size",
@@ -1497,6 +1599,33 @@
       }
     }
   ],
+  {
+    "__type__": "cc.SpriteFrame",
+    "content": {
+      "name": "atom",
+      "texture": "d0qC05vt5GxLaYyB/w3t//",
+      "rect": [
+        0,
+        0,
+        31,
+        31
+      ],
+      "offset": [
+        0,
+        0
+      ],
+      "originalSize": [
+        31,
+        31
+      ],
+      "capInsets": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
   {
     "__type__": "cc.SpriteFrame",
     "content": {
@@ -1790,6 +1919,11 @@
         0
       ]
     }
+  },
+  {
+    "__type__": "cc.ParticleAsset",
+    "_name": "smoke",
+    "_native": ".plist"
   },
   {
     "__type__": "cc.SpriteFrame",

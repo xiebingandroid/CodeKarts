@@ -115,6 +115,10 @@ window.__require = function e(t, n, r) {
         roadCross: {
           default: null,
           type: cc.Prefab
+        },
+        smoke: {
+          default: null,
+          type: cc.Node
         }
       },
       onLoad: function onLoad() {
@@ -150,6 +154,7 @@ window.__require = function e(t, n, r) {
         this.currMoveAction = null;
         this.targetActionCtl = [];
         this.targetActionBtns = [];
+        this.smokeParticle = this.smoke.getComponent(cc.ParticleSystem);
         this.setTargetActionCtl();
         this.readLevelConfig();
         this.resetTargetActionCtl();
@@ -204,6 +209,9 @@ window.__require = function e(t, n, r) {
         currPos.x = this.levelInfo.startPos.x;
         currPos.y = this.levelInfo.startPos.y;
         var block = null;
+        var lastStartPos = cc.v2(0, 0);
+        lastStartPos.x = carInfo.carPos.x;
+        lastStartPos.y = carInfo.carPos.y;
         for (var i = 0; i < this.blocks.length; ++i) {
           block = this.blocks[i];
           console.log("===>>>block[%d]=", i, block);
@@ -217,9 +225,13 @@ window.__require = function e(t, n, r) {
             currPos.y += res.addPos.y;
             this.roads.push(road);
           }
+          var distance = lastStartPos.sub(currPos).mag();
+          this.levelInfo.actionDetails.push(LevelData.getAction(block, currPos, distance));
+          lastStartPos.x = currPos.x;
+          lastStartPos.y = currPos.y;
         }
         this.endLine.setPosition(currPos);
-        block.blockType != BlockType.Up_V && block.blockType != BlockType.Down_V || (this.endLine.angle = -90);
+        block.blockType == BlockType.Up_V || block.blockType == BlockType.Down_V ? this.endLine.angle = -90 : this.endLine.angle = 0;
       },
       onTouchStart: function onTouchStart(event) {
         this.actionIndex = -1;
@@ -317,11 +329,12 @@ window.__require = function e(t, n, r) {
           wrongIndex = i;
           break;
         }
+        console.log("===>>>wrongIndex=%d", wrongIndex);
         var self = this;
         var _loop = function _loop(_i) {
           var index = _i;
           moveEndCallBack[_i] = cc.callFunc(function() {
-            if (index == wrongIndex) {
+            if (index == wrongIndex - 1) {
               console.log("===>>>is wrong");
               self.car.stopAllActions();
               if (self.carNum > 0) {
@@ -337,16 +350,17 @@ window.__require = function e(t, n, r) {
         var actionDetails = this.levelInfo.actionDetails;
         for (var _i2 = 0; _i2 < rightOrder.length; ++_i2) {
           actionArray.push(actionDetails[2 * _i2 + 0]);
-          _i2 != rightOrder.length - 1 && actionArray.push(actionDetails[2 * _i2 + 1]);
+          if (_i2 == wrongIndex - 1) {
+            var wrongAction = self.getWrongAction(wrongIndex);
+            actionArray.push(wrongAction);
+          } else _i2 != rightOrder.length - 1 && actionArray.push(actionDetails[2 * _i2 + 1]);
           actionArray.push(moveEndCallBack[_i2]);
         }
         var end = cc.callFunc(function() {
           var maxLevelID = LevelData.getMaxLevelID();
           var currLevelID = LevelData.getLevelID();
-          if (currLevelID == maxLevelID) {
-            LevelData.setMaxLevelID(maxLevelID + 1);
-            LevelData.saveLevelScore(self.carNum);
-          }
+          currLevelID == maxLevelID && LevelData.setMaxLevelID(maxLevelID + 1);
+          LevelData.saveLevelScore(self.carNum);
           self.win();
         });
         actionArray.push(end);
@@ -357,6 +371,7 @@ window.__require = function e(t, n, r) {
         var carInfo = this.getCarPos();
         this.car.setPosition(carInfo.carPos);
         this.car.angle = carInfo.angle;
+        this.smokeParticle.resetSystem();
         for (var i = 0; i < this.actionBtns.length; ++i) for (var j = 0; j < this.actionBtns[i].length; ++j) this.actionBtns[i][j].destroy();
         for (var _i3 = 0; _i3 < this.targetActionBtns.length; ++_i3) this.targetActionBtns[_i3] && this.targetActionBtns[_i3].destroy();
         this.actionIndex = -1;
@@ -389,6 +404,7 @@ window.__require = function e(t, n, r) {
         actionControl.showNum(this.actionBtns[actionIndex].length - 1, bShow);
       },
       getActionIndex: function getActionIndex(action) {
+        if (!action) return -1;
         var actionControl = action.getComponent("ActionControl");
         return actionControl.getIndex();
       },
@@ -461,22 +477,22 @@ window.__require = function e(t, n, r) {
         switch (firstBlockType) {
          case BlockType.Right_H:
           carPos.x -= 120;
-          angle = -60;
+          angle = 0;
           break;
 
          case BlockType.Left_H:
           carPos.x += 120;
-          angle = 120;
+          angle = 180;
           break;
 
          case BlockType.Up_V:
           carPos.y -= 120;
-          angle = 30;
+          angle = 90;
           break;
 
          case BlockType.Down_V:
           carPos.y += 120;
-          angle = -150;
+          angle = -90;
         }
         return {
           carPos: carPos,
@@ -485,6 +501,7 @@ window.__require = function e(t, n, r) {
       },
       win: function win() {
         var self = this;
+        self.smokeParticle.stopSystem();
         var delay = cc.delayTime(2);
         var next = cc.callFunc(function() {
           var levelNum = LevelData.getLevelNum();
@@ -504,6 +521,7 @@ window.__require = function e(t, n, r) {
       },
       lose: function lose() {
         var self = this;
+        self.smokeParticle.stopSystem();
         var delay = cc.delayTime(2);
         var reset = cc.callFunc(function() {
           if (0 == self.carNum) {
@@ -520,6 +538,28 @@ window.__require = function e(t, n, r) {
       refreshCarNum: function refreshCarNum() {
         var carNum = this.node.getChildByName("car_num").getComponent(cc.Label);
         carNum.string = this.carNum;
+      },
+      getWrongAction: function getWrongAction(wrongIndex) {
+        var wrongAction = cc.delayTime(.1);
+        var lastAction = this.targetActionBtns[wrongIndex - 1];
+        if (!lastAction) return wrongAction;
+        var currAction = this.targetActionBtns[wrongIndex];
+        if (!currAction) return wrongAction;
+        var lastControl = this.getControlByAction(lastAction);
+        var currControl = this.getControlByAction(currAction);
+        lastControl == Control.Right ? wrongAction = currControl == Control.Up ? cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, 90) : cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, -90) : lastControl == Control.Left ? wrongAction = currControl == Control.Up ? cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, -90) : cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, 90) : lastControl == Control.Up ? wrongAction = currControl == Control.Right ? cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, -90) : cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, 90) : lastControl == Control.Down && (wrongAction = currControl == Control.Right ? cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, 90) : cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, -90));
+        return wrongAction;
+      },
+      getControlByAction: function getControlByAction(action) {
+        var actionIndex = this.getActionIndex(action);
+        if (0 == actionIndex) {
+          var block = this.levelInfo.blocks[0];
+          if (block.blockType == BlockType.Right_H) return Control.Right;
+          if (block.blockType == BlockType.Left_H) return Control.Left;
+          if (block.blockType == BlockType.Up_V) return Control.Up;
+          if (block.blockType == BlockType.Down_V) return Control.Down;
+        }
+        return actionIndex;
       }
     });
     cc._RF.pop();
@@ -554,7 +594,7 @@ window.__require = function e(t, n, r) {
     window.CAR_MOVE_ONE_GRID_TIME = .5;
     window.ROAD_WIDTH = 90;
     window.ROAD_HEIGHT = 90;
-    window.ROAD_TURN_RATIO_1 = .75;
+    window.ROAD_TURN_RATIO_1 = 1;
     window.ROAD_TURN_RATIO_2 = .25;
     cc._RF.pop();
   }, {} ],
@@ -653,7 +693,6 @@ window.__require = function e(t, n, r) {
               block.num = blocks[j].number;
               levelItem.blocks.push(block);
               block.blockType != BlockType.Right_H && block.blockType != BlockType.Left_H && block.blockType != BlockType.Up_V && block.blockType != BlockType.Down_V || levelItem.rightOrder.push(self.getControlByType(0 == j, block.blockType));
-              levelItem.actionDetails.push(self.getAction(block));
             }
             var keys = levelInfo.keys;
             levelItem.actions = [ 0, 0, 0, 0, 0, 0 ];
@@ -688,84 +727,29 @@ window.__require = function e(t, n, r) {
         type == BlockType.Right_H ? control = Control.Right : type == BlockType.Left_H ? control = Control.Left : type == BlockType.Up_V ? control = Control.Up : type == BlockType.Down_V && (control = Control.Down);
         return control;
       },
-      getAction: function getAction(block) {
+      getAction: function getAction(block, targetPos, distance) {
         var action = null;
-        var move1 = null;
-        var move2 = null;
-        var rotate = null;
         var blockType = block.blockType;
-        var num = block.num;
         switch (blockType) {
          case BlockType.Right_H:
-          action = cc.moveBy(num * CAR_MOVE_ONE_GRID_TIME, cc.v2(num * ROAD_WIDTH, 0));
-          break;
-
          case BlockType.Left_H:
-          action = cc.moveBy(num * CAR_MOVE_ONE_GRID_TIME, cc.v2(-num * ROAD_WIDTH, 0));
-          break;
-
          case BlockType.Up_V:
-          action = cc.moveBy(num * CAR_MOVE_ONE_GRID_TIME, cc.v2(0, num * ROAD_WIDTH));
-          break;
-
          case BlockType.Down_V:
-          action = cc.moveBy(num * CAR_MOVE_ONE_GRID_TIME, cc.v2(0, -num * ROAD_WIDTH));
+          action = cc.moveTo(distance / ROAD_WIDTH * CAR_MOVE_ONE_GRID_TIME, targetPos);
           break;
 
          case BlockType.Right_Up:
-          move1 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(ROAD_TURN_RATIO_1 * ROAD_WIDTH, 0));
-          move2 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(0, ROAD_TURN_RATIO_1 * ROAD_WIDTH));
-          rotate = cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, 90);
-          action = cc.sequence(move1, rotate, move2);
+         case BlockType.Left_Down:
+         case BlockType.Up_Left:
+         case BlockType.Down_Right:
+          action = cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, 90);
           break;
 
          case BlockType.Right_Down:
-          move1 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(ROAD_TURN_RATIO_1 * ROAD_WIDTH, 0));
-          move2 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(0, -ROAD_TURN_RATIO_1 * ROAD_WIDTH));
-          rotate = cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, 90);
-          action = cc.sequence(move1, rotate, move2);
-          break;
-
          case BlockType.Left_Up:
-          move1 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(-ROAD_TURN_RATIO_1 * ROAD_WIDTH, 0));
-          move2 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(0, ROAD_TURN_RATIO_1 * ROAD_WIDTH));
-          rotate = cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, 90);
-          action = cc.sequence(move1, rotate, move2);
-          break;
-
-         case BlockType.Left_Down:
-          move1 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(-ROAD_TURN_RATIO_1 * ROAD_WIDTH, 0));
-          move2 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(0, -ROAD_TURN_RATIO_1 * ROAD_WIDTH));
-          rotate = cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, 90);
-          action = cc.sequence(move1, rotate, move2);
-          break;
-
          case BlockType.Up_Right:
-          move1 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(0, ROAD_TURN_RATIO_1 * ROAD_WIDTH));
-          move2 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(ROAD_TURN_RATIO_1 * ROAD_WIDTH, 0));
-          rotate = cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, 90);
-          action = cc.sequence(move1, rotate, move2);
-          break;
-
-         case BlockType.Up_Left:
-          move1 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(0, ROAD_TURN_RATIO_1 * ROAD_WIDTH));
-          move2 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(-ROAD_TURN_RATIO_1 * ROAD_WIDTH, 0));
-          rotate = cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, 90);
-          action = cc.sequence(move1, rotate, move2);
-          break;
-
-         case BlockType.Down_Right:
-          move1 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(0, -ROAD_TURN_RATIO_1 * ROAD_WIDTH));
-          move2 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(ROAD_TURN_RATIO_1 * ROAD_WIDTH, 0));
-          rotate = cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, 90);
-          action = cc.sequence(move1, rotate, move2);
-          break;
-
          case BlockType.Down_Left:
-          move1 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(0, -ROAD_TURN_RATIO_1 * ROAD_WIDTH));
-          move2 = cc.moveBy(ROAD_TURN_RATIO_1 * CAR_MOVE_ONE_GRID_TIME, cc.v2(-ROAD_TURN_RATIO_1 * ROAD_WIDTH, 0));
-          rotate = cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, 90);
-          action = cc.sequence(move1, rotate, move2);
+          action = cc.rotateBy(ROAD_TURN_RATIO_2 * CAR_MOVE_ONE_GRID_TIME * 2, -90);
         }
         return action;
       },
@@ -789,11 +773,12 @@ window.__require = function e(t, n, r) {
       getLevelScore: function getLevelScore(id) {
         var score = cc.sys.localStorage.getItem("level_" + id + "_score");
         score || (score = 0);
-        return score;
+        return Number(score);
       },
       saveLevelScore: function saveLevelScore(score) {
         var lastScore = cc.sys.localStorage.getItem("level_" + this.levelID + "_score");
         lastScore || (lastScore = 0);
+        lastScore = Number(lastScore);
         lastScore < score && cc.sys.localStorage.setItem("level_" + this.levelID + "_score", score);
       }
     });
@@ -1052,6 +1037,33 @@ window.__require = function e(t, n, r) {
   }, {
     SpriteFrameSet: "SpriteFrameSet"
   } ],
+  Splash: [ function(require, module, exports) {
+    "use strict";
+    cc._RF.push(module, "a872azkQGVBH5N1qXRmxIH9", "Splash");
+    "use strict";
+    cc.Class({
+      extends: cc.Component,
+      properties: {
+        video: {
+          default: null,
+          type: cc.Node
+        }
+      },
+      onCompleted: function onCompleted(videoPlayer, eventType, customData) {
+        if (eventType == cc.VideoPlayer.EventType.META_LOADED) videoPlayer.play(); else if (eventType == cc.VideoPlayer.EventType.COMPLETED) {
+          var delay = cc.delayTime(.5);
+          var loadScene = cc.callFunc(function() {
+            cc.director.loadScene("LobbyScene");
+          });
+          this.node.runAction(cc.sequence(delay, loadScene));
+        }
+      },
+      onDestroy: function onDestroy() {
+        this.video.off("completed", this.onCompleted, this);
+      }
+    });
+    cc._RF.pop();
+  }, {} ],
   SpriteFrameSet: [ function(require, module, exports) {
     "use strict";
     cc._RF.push(module, "97019Q80jpE2Yfz4zbuCZBq", "SpriteFrameSet");
@@ -1202,4 +1214,4 @@ window.__require = function e(t, n, r) {
     };
     cc._RF.pop();
   }, {} ]
-}, {}, [ "en", "zh", "ActionControl", "Game", "Global", "Level", "LevelData", "LevelItem", "LevelSelect", "Lobby", "LanguageData", "LocalizedLabel", "LocalizedSprite", "SpriteFrameSet", "polyglot.min" ]);
+}, {}, [ "en", "zh", "ActionControl", "Game", "Global", "Level", "LevelData", "LevelItem", "LevelSelect", "Lobby", "Splash", "LanguageData", "LocalizedLabel", "LocalizedSprite", "SpriteFrameSet", "polyglot.min" ]);
